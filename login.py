@@ -29,14 +29,16 @@ def remove_pid_file():
 def handle_message(client, message):
     print(f"Pesan dari {message.chat.id} ({message.chat.username}): {message.text}")
 
-# Jalankan Client
-with app:
+# Menjalankan program
+try:
     check_if_running()
-    try:
-        # Tampilkan informasi akun dan nomor telepon saat program dijalankan
-        me = app.get_me()
-        print(f"Program berjalan dengan akun Telegram: {me.first_name} ({me.phone_number})")
-        
-        app.run()
-    finally:
-        remove_pid_file()
+
+    # Tampilkan informasi akun dan nomor telepon saat program dijalankan
+    me = app.get_me()
+    print(f"Program berjalan dengan akun Telegram: {me.first_name} ({me.phone_number})")
+
+    # Menjalankan event loop untuk mendengarkan pesan
+    app.run()
+
+finally:
+    remove_pid_file()
