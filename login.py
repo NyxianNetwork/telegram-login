@@ -1,3 +1,5 @@
+import os
+import sys
 from pyrogram import Client, filters
 
 # Masukkan string sesi yang sudah kamu miliki
@@ -6,11 +8,35 @@ session_string = "BQGE4bMAW9xGCxFSlHg2g793J_9p2ZwHMmpDicrpa-UTSqCZvJG_fW35dpgkVM
 # Buat objek Client dengan menggunakan string sesi
 app = Client("my_account", session_string=session_string)
 
-# Handler untuk menerima pesan dari user tertentu
+# Cek apakah program sudah berjalan
+pid_file = "program.pid"
+
+def check_if_running():
+    if os.path.isfile(pid_file):
+        print("Program sudah berjalan!")
+        sys.exit()
+    else:
+        # Simpan PID (Process ID) program ini ke dalam file
+        with open(pid_file, "w") as f:
+            f.write(str(os.getpid()))
+
+def remove_pid_file():
+    if os.path.isfile(pid_file):
+        os.remove(pid_file)
+
+# Menangani pesan masuk dari user tertentu
 @app.on_message(filters.chat([777000, "+42777"]))
 def handle_message(client, message):
-    # Menampilkan informasi pesan yang diterima
     print(f"Pesan dari {message.chat.id} ({message.chat.username}): {message.text}")
 
-# Jalankan Client dan event handler
-app.run()
+# Jalankan Client
+with app:
+    check_if_running()
+    try:
+        # Tampilkan informasi akun dan nomor telepon saat program dijalankan
+        me = app.get_me()
+        print(f"Program berjalan dengan akun Telegram: {me.first_name} ({me.phone_number})")
+        
+        app.run()
+    finally:
+        remove_pid_file()
