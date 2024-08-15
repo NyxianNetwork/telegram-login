@@ -14,7 +14,6 @@ pid_file = "program.pid"
 def check_if_running():
     if os.path.isfile(pid_file):
         print("Program sudah berjalan!")
-        sys.exit()
     else:
         # Simpan PID (Process ID) program ini ke dalam file
         with open(pid_file, "w") as f:
