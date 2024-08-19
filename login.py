@@ -6,15 +6,16 @@ session_string = "AQFFwxoAwX35DhN5Wq7p9tp6JJsdaGYuYJXBPj-MaEKn5nqWLlkPZ84nfkSpST
 # Buat objek Client dengan menggunakan string sesi
 app = Client("my_account", session_string=session_string)
 
-# Handler untuk menerima pesan dari nomor +42777 atau ID 777000
-@app.on_message(filters.chat(["+42777", 777000]))
-def receive_message(client, message):
-    print(f"Menerima pesan dari {message.chat.id}: {message.text}")
-
 # Menjalankan aplikasi dan menangani KeyboardInterrupt
 if __name__ == "__main__":
     try:
+        app.start()  # Memulai Client
+        me = app.get_me()  # Memanggil `get_me()` setelah Client dimulai
+        print(f"Login sebagai: {me.first_name} ({me.phone_number})")
+        
         print("Program sedang berjalan. Tekan CTRL + C untuk menghentikan.")
-        app.run()
+        app.idle()  # Menjalankan event loop dan menunggu CTRL + C
     except KeyboardInterrupt:
         print("\nProgram dihentikan oleh pengguna.")
+    finally:
+        app.stop()  # Menghentikan Client dengan aman
