@@ -44,8 +44,8 @@ try:
 
         print("Menunggu pesan masuk...")
 
-        # Menjalankan event loop untuk mendengarkan pesan
-        app.run()
+        # Jangan gunakan app.run() karena koneksi sudah aktif, cukup gunakan idle untuk menjaga event loop tetap berjalan
+        app.idle()
 
 finally:
     remove_pid_file()
