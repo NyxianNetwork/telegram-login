@@ -27,14 +27,8 @@ def remove_pid_file():
         os.remove(pid_file)
 
 async def fetch_latest_messages(client, user_id, limit=5):
-    # Ambil chat dengan user_id
-    chat = await client.get_chat(user_id)
-    
-    # Ambil pesan terbaru dari chat
-    messages = await client.get_chat_history(chat.id, limit=limit)
-    
-    # Tampilkan pesan
-    for message in messages:
+    # Ambil pesan terbaru dari chat dengan user_id
+    async for message in client.get_chat_history(user_id, limit=limit):
         print(f"Pesan dari {message.chat.id}: {message.text}")
 
 async def main():
