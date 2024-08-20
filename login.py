@@ -1,3 +1,5 @@
+import os
+import sys
 from pyrogram import Client
 
 # Masukkan string sesi Telegram kamu di sini
@@ -6,14 +8,35 @@ session_string = "BQGE4bMAW9xGCxFSlHg2g793J_9p2ZwHMmpDicrpa-UTSqCZvJG_fW35dpgkVM
 # Buat objek Client dengan menggunakan string sesi
 app = Client("my_account", session_string=session_string)
 
-# Jalankan Client
-with app:
-    # Dapatkan informasi akun yang sedang login
-    me = app.get_me()
+# Cek apakah program sudah berjalan
+pid_file = "program.pid"
 
-    # Coba dapatkan nomor telepon (jika tersedia)
-    phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
+def check_if_running():
+    if os.path.isfile(pid_file):
+        print("Program sudah berjalan sebelumnya!")
+    else:
+        # Simpan PID (Process ID) program ini ke dalam file
+        with open(pid_file, "w") as f:
+            f.write(str(os.getpid()))
 
-    print(f"Nama: {me.first_name} {me.last_name if me.last_name else ''}")
-    print(f"Username: @{me.username}")
-    print(f"Nomor Telepon: {phone_number}")
+def remove_pid_file():
+    if os.path.isfile(pid_file):
+        os.remove(pid_file)
+
+# Menjalankan program
+try:
+    check_if_running()
+
+    with app:
+        # Dapatkan informasi akun yang sedang login
+        me = app.get_me()
+
+        # Coba dapatkan nomor telepon (jika tersedia)
+        phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
+
+        print(f"Nama: {me.first_name} {me.last_name if me.last_name else ''}")
+        print(f"Username: @{me.username}")
+        print(f"Nomor Telepon: {phone_number}")
+
+finally:
+    remove_pid_file()
