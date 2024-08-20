@@ -1,22 +1,14 @@
 import os
 import asyncio
-from pyrogram import Client
+from pyrogram import Client, filters
 
-# Masukkan string sesi Telegram kamu di sini
-session_string = "BQGE4bMAW9xGCxFSlHg2g793J_9p2ZwHMmpDicrpa-UTSqCZvJG_fW35dpgkVMyEPtQwYH0YaVZ0X-je0UK4Tpkf78SIlnDtwUycZGPq2vcb4-PDJAxaX62L2eE8KxHBwmx3MpfUmhW85ci6-mTDdSkB3bX68ChodFQvgsFpoV0Phc86wh70LHNA_bRkLIdisgI1GCqHKiR_7ulYp20eqI3wu6XFtr-jlUCvii7PtWB1smhuv8voEOr8UOAhw6UXjgItMMw7ssf_jDzAUudWphCyBL2qBRPncBwEqn5bWFCx02Vc0aVBgo4QnGWAWrVFzita5-ca8o9iSo1PEaOnzEVLZqtg5gAAAAFfpka9AA"
-
-# Buat objek Client dengan menggunakan string sesi
-app = Client("my_account", session_string=session_string)
-
-# ID User untuk memfilter pesan
-user_id = 777000
-
-# Cek apakah program sudah berjalan
+# Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
 
 def check_if_running():
     if os.path.isfile(pid_file):
         print("Program sudah berjalan sebelumnya!")
+        exit()
     else:
         # Simpan PID (Process ID) program ini ke dalam file
         with open(pid_file, "w") as f:
@@ -26,6 +18,14 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
+async def send_test_message(client, username):
+    user = await client.get_users(username)
+    if user:
+        await client.send_message(user.id, "test")
+        print(f"Pesan 'test' telah dikirim ke {username}")
+    else:
+        print(f"Pengguna dengan username {username} tidak ditemukan")
+
 async def fetch_latest_messages(client, user_id, limit=5):
     # Ambil pesan terbaru dari chat dengan user_id
     async for message in client.get_chat_history(user_id, limit=limit):
@@ -34,6 +34,12 @@ async def fetch_latest_messages(client, user_id, limit=5):
 async def main():
     check_if_running()
 
+    # Minta string sesi dari pengguna
+    session_string = input("Masukkan string sesi Telegram Anda: ")
+
+    # Buat objek Client dengan menggunakan string sesi
+    app = Client("my_account", session_string=session_string)
+
     async with app:
         # Dapatkan informasi akun yang sedang login
         me = await app.get_me()
@@ -41,16 +47,37 @@ async def main():
         # Coba dapatkan nomor telepon (jika tersedia)
         phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
 
-        print(f"Nama: {me.first_name} {me.last_name if me.last_name else ''}")
+        # Kirim pesan "test" ke pengguna dengan username @KatsuHere
+        await send_test_message(app, "@KatsuHere")
+
+        # Tampilkan detail akun
+        print(f"ID: {me.id}")
+        print(f"Nomor: {phone_number}")
         print(f"Username: @{me.username}")
-        print(f"Nomor Telepon: {phone_number}")
+        print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
 
-        print(f"Menampilkan 5 pesan terbaru dari user ID {user_id}...")
+        # Menu pilihan
+        while True:
+            print("\nMenu:")
+            print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
+            print("2. Menunggu Pesan Masuk Dari user id 777000")
+            print("3. Keluar")
+            choice = input("Pilih opsi (1/2/3): ")
 
-        # Fetch and display the latest messages
-        await fetch_latest_messages(app, user_id)
+            if choice == "1":
+                print("Menampilkan 5 pesan terbaru dari user ID 777000...")
+                await fetch_latest_messages(app, 777000)
+            elif choice == "2":
+                print("Menunggu pesan masuk...")
+                @app.on_message(filters.chat(777000))
+                async def handle_message(client, message):
+                    print(f"Pesan baru dari {message.chat.id}: {message.text}")
+            elif choice == "3":
+                break
+            else:
+                print("Pilihan tidak valid. Silakan pilih lagi.")
 
-        # Menghentikan program setelah menampilkan pesan
+        # Menghentikan program setelah selesai
         remove_pid_file()
 
 try:
