@@ -23,16 +23,14 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-# Menangani semua pesan untuk sementara, guna debugging
+# Menangani semua pesan yang masuk
 @app.on_message()
 async def handle_message(client, message):
     print(f"Pesan diterima dari chat_id: {message.chat.id}")
     print(f"Pesan dari {message.chat.id} ({message.chat.username}): {message.text}")
 
-    # Tambahkan filter untuk menangani hanya pesan dari chat_id tertentu
-    if message.chat.id in [777000, 42777]:  # Note: +42777 should be just 42777 as int
-        print("Pesan ini berasal dari 777000 atau 42777 dan isinya:")
-        print(message.text)
+    # Menampilkan informasi lebih rinci untuk debugging
+    print(f"Full Message: {message}")
 
 async def main():
     check_if_running()
