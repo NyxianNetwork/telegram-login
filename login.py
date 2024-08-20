@@ -23,11 +23,10 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-# Menangani pesan yang diterima dari user ID 777000
-@app.on_message(filters.user(777000))
+# Menangani pesan pribadi dari user dengan ID 777000
+@app.on_message(filters.private & filters.user(777000))
 async def handle_message(client, message):
-    print(f"Pesan diterima dari user_id: {message.from_user.id}")
-    print(f"Pesan dari {message.from_user.first_name} ({message.from_user.id}): {message.text}")
+    print(f"Pesan pribadi dari {message.chat.id}: {message.text}")
 
 async def main():
     check_if_running()
@@ -43,8 +42,8 @@ async def main():
         print(f"Username: @{me.username}")
         print(f"Nomor Telepon: {phone_number}")
 
-        print("Menunggu pesan masuk dari user_id 777000...")
-        
+        print("Menunggu pesan pribadi dari user ID 777000...")
+
         # Menjaga event loop tetap berjalan
         await asyncio.Future()  # Ini akan membuat program tetap berjalan
 
