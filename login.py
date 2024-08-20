@@ -1,5 +1,4 @@
 import os
-import sys
 from pyrogram import Client, filters
 
 # Masukkan string sesi Telegram kamu di sini
@@ -23,7 +22,7 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-# Menangani pesan masuk
+# Menangani pesan masuk dari nomor +42777 atau ID 777000
 @app.on_message(filters.chat([777000, "+42777"]))
 def handle_message(client, message):
     print(f"Pesan dari {message.chat.id} ({message.chat.username}): {message.text}")
@@ -43,9 +42,10 @@ try:
         print(f"Username: @{me.username}")
         print(f"Nomor Telepon: {phone_number}")
 
-        # Jalankan event loop untuk mendengarkan pesan masuk
-        print("Mendengarkan pesan masuk...")
-        app.run()  # Ini akan menjaga program tetap berjalan untuk menerima pesan
+        print("Menunggu pesan masuk...")
+
+        # Menjalankan event loop untuk mendengarkan pesan
+        app.run()
 
 finally:
     remove_pid_file()
