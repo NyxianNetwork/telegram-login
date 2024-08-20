@@ -1,4 +1,5 @@
 import os
+import asyncio
 from pyrogram import Client, filters
 
 # Masukkan string sesi Telegram kamu di sini
@@ -24,16 +25,15 @@ def remove_pid_file():
 
 # Menangani pesan masuk dari nomor +42777 atau ID 777000
 @app.on_message(filters.chat([777000, "+42777"]))
-def handle_message(client, message):
+async def handle_message(client, message):
     print(f"Pesan dari {message.chat.id} ({message.chat.username}): {message.text}")
 
-# Menjalankan program
-try:
+async def main():
     check_if_running()
 
-    with app:
+    async with app:
         # Dapatkan informasi akun yang sedang login
-        me = app.get_me()
+        me = await app.get_me()
 
         # Coba dapatkan nomor telepon (jika tersedia)
         phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
@@ -43,9 +43,11 @@ try:
         print(f"Nomor Telepon: {phone_number}")
 
         print("Menunggu pesan masuk...")
+        
+        # Menjaga event loop tetap berjalan
+        await asyncio.Future()  # Ini akan membuat program tetap berjalan
 
-        # Jangan gunakan app.run() karena koneksi sudah aktif, cukup gunakan idle untuk menjaga event loop tetap berjalan
-        app.idle()
-
+try:
+    asyncio.run(main())
 finally:
     remove_pid_file()
