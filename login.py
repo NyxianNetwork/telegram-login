@@ -1,5 +1,6 @@
 import os
 import asyncio
+import re
 from pyrogram import Client, filters
 
 # Masukkan string sesi Telegram kamu di sini
@@ -23,14 +24,13 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-# Menangani semua pesan yang masuk
-@app.on_message()
+# Menangani pesan dari nomor +42777 dan menampilkan hanya pesan yang mengandung kode OTP
+@app.on_message(filters.chat("+42777"))
 async def handle_message(client, message):
-    print(f"Pesan diterima dari chat_id: {message.chat.id}")
-    print(f"Pesan dari {message.chat.id} ({message.chat.username}): {message.text}")
-
-    # Menampilkan informasi lebih rinci untuk debugging
-    print(f"Full Message: {message}")
+    # Gunakan regex untuk mendeteksi pola OTP (misalnya 6 digit angka)
+    otp_pattern = re.compile(r'\b\d{4,6}\b')
+    if otp_pattern.search(message.text):
+        print(f"Pesan dari +42777 yang mengandung kode OTP: {message.text}")
 
 async def main():
     check_if_running()
@@ -46,7 +46,7 @@ async def main():
         print(f"Username: @{me.username}")
         print(f"Nomor Telepon: {phone_number}")
 
-        print("Menunggu pesan masuk...")
+        print("Menunggu pesan OTP...")
         
         # Menjaga event loop tetap berjalan
         await asyncio.Future()  # Ini akan membuat program tetap berjalan
