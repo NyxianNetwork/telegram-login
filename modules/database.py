@@ -1,3 +1,4 @@
+from main import app  # Impor 'app' dari 'main.py'
 from pymongo import MongoClient
 from config import MONGO_URI
 
