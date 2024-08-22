@@ -43,6 +43,11 @@ async def main():
     # Buat objek Client dengan menggunakan string sesi
     app = Client("my_account", session_string=session_string)
 
+    # Deklarasikan handler pesan di luar loop
+    @app.on_message(filters.chat(777000))
+    async def handle_incoming_message(client, message):
+        print(f"Pesan baru dari {message.chat.id}: {message.text}")
+
     async with app:
         # Dapatkan informasi akun yang sedang login
         me = await app.get_me()
@@ -59,9 +64,6 @@ async def main():
         print(f"Username: @{me.username}")
         print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
 
-        # Deklarasikan handler pesan di sini
-        app.add_handler(filters.chat(777000), handle_message)
-
         # Menu pilihan
         while True:
             print("\nMenu:")
@@ -75,7 +77,8 @@ async def main():
                 await fetch_latest_messages(app, 777000)
             elif choice == "2":
                 print("Menunggu pesan masuk dari user ID 777000...")
-                await app.idle()  # Menunggu pesan masuk
+                await app.start()  # Memulai klien
+                await asyncio.Event().wait()  # Menunggu hingga pesan masuk
             elif choice == "3":
                 break
             else:
