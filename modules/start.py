@@ -3,6 +3,9 @@ from pyrogram import filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import OWNER_ID
 from modules.database import is_allowed_user, save_user_string
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 @app.on_message(filters.command("start") & filters.private)
 async def start_command(client, message):
