@@ -1,3 +1,4 @@
+from main import app  # Impor 'app' dari 'main.py'
 from pyrogram import filters
 from modules.database import add_permission, remove_permission, add_sudo, remove_sudo
 
