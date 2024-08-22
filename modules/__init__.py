@@ -1,5 +1,6 @@
 import importlib
 import os
+from main import app  # Impor 'app' dari 'main.py' agar tersedia di semua modul
 
 # Inisialisasi semua modul yang ada di direktori 'modules'
 module_directory = os.path.dirname(__file__)
