@@ -77,8 +77,8 @@ async def main():
                 await fetch_latest_messages(app, 777000)
             elif choice == "2":
                 print("Menunggu pesan masuk dari user ID 777000...")
-                await app.start()  # Memulai klien
-                await asyncio.Event().wait()  # Menunggu hingga pesan masuk
+                # Tunggu hingga program dihentikan atau pengguna memilih keluar
+                await asyncio.Future()  # Menunggu pesan secara asinkron
             elif choice == "3":
                 break
             else:
