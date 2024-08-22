@@ -31,6 +31,9 @@ async def fetch_latest_messages(client, user_id, limit=5):
     async for message in client.get_chat_history(user_id, limit=limit):
         print(f"Pesan dari {message.chat.id}: {message.text}")
 
+async def handle_message(client, message):
+    print(f"Pesan baru dari {message.chat.id}: {message.text}")
+
 async def main():
     check_if_running()
 
@@ -56,6 +59,9 @@ async def main():
         print(f"Username: @{me.username}")
         print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
 
+        # Deklarasikan handler pesan di sini
+        app.add_handler(filters.chat(777000), handle_message)
+
         # Menu pilihan
         while True:
             print("\nMenu:")
@@ -68,10 +74,8 @@ async def main():
                 print("Menampilkan 5 pesan terbaru dari user ID 777000...")
                 await fetch_latest_messages(app, 777000)
             elif choice == "2":
-                print("Menunggu pesan masuk...")
-                @app.on_message(filters.chat(777000))
-                async def handle_message(client, message):
-                    print(f"Pesan baru dari {message.chat.id}: {message.text}")
+                print("Menunggu pesan masuk dari user ID 777000...")
+                await app.idle()  # Menunggu pesan masuk
             elif choice == "3":
                 break
             else:
