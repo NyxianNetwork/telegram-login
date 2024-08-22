@@ -1,6 +1,5 @@
 from pyrogram import Client
 from config import BOT_TOKEN, API_ID, API_HASH
-import modules  # Mengimpor semua modul di direktori modules
 
 app = Client(
     "my_bot",
@@ -10,4 +9,5 @@ app = Client(
 )
 
 if __name__ == "__main__":
+    import modules  # Mengimpor semua modul di direktori modules
     app.run()
