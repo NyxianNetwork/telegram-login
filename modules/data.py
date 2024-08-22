@@ -1,3 +1,4 @@
+from main import app  # Impor 'app' dari 'main.py'
 from pyrogram import filters
 from modules.database import get_user_string
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
