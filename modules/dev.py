@@ -1,3 +1,4 @@
+from config import *
 from main import app  # Impor 'app' dari 'main.py'
 from pyrogram import filters
 from modules.database import get_user_string
