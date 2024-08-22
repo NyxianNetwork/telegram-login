@@ -1,3 +1,4 @@
+from main import app  # Impor 'app' dari 'main.py'
 from pyrogram import filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from config import OWNER_ID
