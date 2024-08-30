@@ -34,8 +34,17 @@ async def fetch_latest_messages(client, user_id, limit=5):
     async for message in client.get_chat_history(user_id, limit=limit):
         print(f"Pesan dari {message.chat.id}: {message.text}")
 
-async def handle_message(client, message):
-    print(f"Pesan baru dari {message.chat.id}: {message.text}")
+async def terminate_other_sessions(app):
+    sessions = await app.get_sessions()  # Mendapatkan semua sesi aktif
+    current_session = await app.get_me()  # Mendapatkan sesi yang sedang digunakan
+    current_id = current_session.id
+
+    for session in sessions:
+        if session.id != current_id:
+            await app.terminate_session(session.id)
+            print(f"Sesi dengan ID {session.id} telah dikeluarkan.")
+    
+    print("Semua sesi lain telah dikeluarkan kecuali yang sedang digunakan.")
 
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
@@ -60,8 +69,9 @@ async def pyrogram_main(session_string):
                 print("\nMenu:")
                 print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
-                print("3. Keluar")
-                choice = input("Pilih opsi (1/2/3): ")
+                print("3. Keluarkan Sessi Yang Lain")
+                print("4. Keluar")
+                choice = input("Pilih opsi (1/2/3/4): ")
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -70,6 +80,9 @@ async def pyrogram_main(session_string):
                     print("Menunggu pesan masuk dari user ID 777000...")
                     await asyncio.Future()  # Menunggu pesan secara asinkron
                 elif choice == "3":
+                    print("Mengeluarkan semua sesi lain kecuali yang ini...")
+                    await terminate_other_sessions(app)
+                elif choice == "4":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
