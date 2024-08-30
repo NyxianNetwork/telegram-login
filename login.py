@@ -75,7 +75,7 @@ async def pyrogram_main(session_string):
 
         remove_pid_file()
 
-async def telethon_main(session_string, api_id, api_hash):
+async def telethon_main(api_id, api_hash, session_string):
     async with TelethonClient(StringSession(session_string), api_id, api_hash) as client:
         me = await client.get_me()
         phone_number = me.phone if me.phone else "Nomor telepon tidak tersedia"
@@ -123,10 +123,10 @@ async def main():
         session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
         await pyrogram_main(session_string)
     elif choice == "2":
-        session_string = input("Masukkan string sesi Telethon Anda: ")
         api_id = input("Masukkan API ID Anda: ")
         api_hash = input("Masukkan API Hash Anda: ")
-        await telethon_main(session_string, api_id, api_hash)
+        session_string = input("Masukkan string sesi Telethon Anda: ")
+        await telethon_main(api_id, api_hash, session_string)
     else:
         print("Pilihan tidak valid.")
         remove_pid_file()
