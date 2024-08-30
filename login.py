@@ -1,7 +1,7 @@
 import os
 import asyncio
-from pyrogram import Client, filters
-from telethon import TelegramClient
+from pyrogram import Client as PyrogramClient, filters
+from telethon import TelegramClient as TelethonClient
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
@@ -28,50 +28,53 @@ async def send_test_message_pyrogram(client, username):
         print(f"Pengguna dengan username {username} tidak ditemukan")
 
 async def send_test_message_telethon(client, username):
-    await client.send_message(username, "test")
-    print(f"Pesan 'test' telah dikirim ke {username}")
+    user = await client.get_entity(username)
+    if user:
+        await client.send_message(user.id, "test")
+        print(f"Pesan 'test' telah dikirim ke {username}")
+    else:
+        print(f"Pengguna dengan username {username} tidak ditemukan")
 
 async def fetch_latest_messages_pyrogram(client, user_id, limit=5):
-    # Ambil pesan terbaru dari chat dengan user_id
     async for message in client.get_chat_history(user_id, limit=limit):
         print(f"Pesan dari {message.chat.id}: {message.text}")
 
 async def fetch_latest_messages_telethon(client, user_id, limit=5):
-    messages = await client.get_messages(user_id, limit=limit)
-    for message in messages:
-        print(f"Pesan dari {message.sender_id}: {message.text}")
+    async for message in client.iter_messages(user_id, limit=limit):
+        print(f"Pesan dari {message.chat_id}: {message.text}")
+
+async def handle_message_pyrogram(client, message):
+    print(f"Pesan baru dari {message.chat.id}: {message.text}")
+
+async def handle_message_telethon(client, event):
+    message = event.message
+    print(f"Pesan baru dari {message.chat_id}: {message.text}")
 
 async def main():
     check_if_running()
 
-    # Memilih jenis client yang akan digunakan
-    print("Pilih jenis string yang akan dimasukkan:")
-    print("1. Pyrogram")
-    print("2. Telethon")
-    client_type = input("Masukkan pilihan Anda (1/2): ")
+    # Minta pengguna memilih jenis string sesi
+    client_type = input("Pilih jenis string (1 untuk Pyrogram, 2 untuk Telethon): ")
+    session_string = input("Masukkan string sesi Telegram Anda: ")
 
     if client_type == "1":
-        # Pyrogram
-        session_string = input("Masukkan string sesi Pyrogram Anda: ")
-        app = Client("my_account", session_string=session_string)
+        app = PyrogramClient("my_account", session_string=session_string)
+
+        @app.on_message(filters.chat(777000))
+        async def handle_incoming_message(client, message):
+            await handle_message_pyrogram(client, message)
 
         async with app:
-            # Dapatkan informasi akun yang sedang login
             me = await app.get_me()
-
-            # Coba dapatkan nomor telepon (jika tersedia)
             phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
 
-            # Kirim pesan "test" ke pengguna dengan username @KatsuHere
             await send_test_message_pyrogram(app, "@KatsuHere")
 
-            # Tampilkan detail akun
             print(f"ID: {me.id}")
             print(f"Nomor: {phone_number}")
             print(f"Username: @{me.username}")
             print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
 
-            # Menu pilihan
             while True:
                 print("\nMenu:")
                 print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
@@ -84,38 +87,30 @@ async def main():
                     await fetch_latest_messages_pyrogram(app, 777000)
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
-                    # Tunggu hingga program dihentikan atau pengguna memilih keluar
-                    await asyncio.Future()  # Menunggu pesan secara asinkron
+                    await asyncio.Future()
                 elif choice == "3":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
-                    
+
     elif client_type == "2":
-        # Telethon
-        session_string = input("Masukkan string sesi Telethon Anda: ")
+        api_id = input("Masukkan API ID Telethon Anda: ")
+        api_hash = input("Masukkan API Hash Telethon Anda: ")
+        app = TelethonClient("my_account", api_id, api_hash, session=session_string)
 
-        # Anda perlu memasukkan api_id dan api_hash di sini
-        api_id = 123456  # Ganti dengan API ID Telegram Anda
-        api_hash = 'your_api_hash_here'  # Ganti dengan API Hash Telegram Anda
+        async with app:
+            await app.start()
 
-        # Buat klien menggunakan string sesi
-        client = TelegramClient("anon", api_id, api_hash)
-        client = await client.start(bot_token=None, phone=None, password=None, force_sms=False, code_callback=None, email_code_callback=None, qr_code_callback=None, password_callback=None, string=session_string)
+            me = await app.get_me()
+            phone_number = me.phone if me.phone else "Nomor telepon tidak tersedia"
 
-        async with client:
-            # Dapatkan informasi akun yang sedang login
-            me = await client.get_me()
+            await send_test_message_telethon(app, "@KatsuHere")
 
-            # Kirim pesan "test" ke pengguna dengan username @KatsuHere
-            await send_test_message_telethon(client, "@KatsuHere")
-
-            # Tampilkan detail akun
             print(f"ID: {me.id}")
+            print(f"Nomor: {phone_number}")
             print(f"Username: @{me.username}")
             print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
 
-            # Menu pilihan
             while True:
                 print("\nMenu:")
                 print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
@@ -125,21 +120,19 @@ async def main():
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
-                    await fetch_latest_messages_telethon(client, 777000)
+                    await fetch_latest_messages_telethon(app, 777000)
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
-                    # Tunggu hingga program dihentikan atau pengguna memilih keluar
-                    await asyncio.Future()  # Menunggu pesan secara asinkron
+                    app.add_event_handler(handle_message_telethon)
+                    await asyncio.Future()
                 elif choice == "3":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
-                    
-    else:
-        print("Pilihan tidak valid. Program dihentikan.")
-        return
 
-    # Menghentikan program setelah selesai
+    else:
+        print("Pilihan tidak valid. Harap pilih antara 1 atau 2.")
+
     remove_pid_file()
 
 try:
