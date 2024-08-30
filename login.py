@@ -39,22 +39,6 @@ async def fetch_latest_messages(client, user_id, limit=5):
 async def handle_message(client, message):
     print(f"Pesan baru dari {message.chat.id}: {message.text}")
 
-async def logout_other_sessions(app):
-    # Mendapatkan informasi sesi saat ini
-    current_session = await app.get_me()
-
-    # Mendapatkan daftar sesi aktif
-    sessions = await app.get_active_sessions()
-
-    for session in sessions:
-        # Membandingkan ID sesi saat ini dengan sesi lain
-        if session.id != current_session.id:
-            try:
-                await app.terminate_session(session.hash)
-                print(f"Sesi dengan ID {session.id} telah dikeluarkan.")
-            except Exception as e:
-                print(f"Gagal mengeluarkan sesi dengan ID {session.id}: {e}")
-
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
 
@@ -79,9 +63,8 @@ async def pyrogram_main(session_string):
                 print("\nMenu:")
                 print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
-                print("3. Keluarkan Sessi Yang Lain")
-                print("4. Keluar")
-                choice = input("Pilih opsi (1/2/3/4): ")
+                print("3. Keluar")
+                choice = input("Pilih opsi (1/2/3): ")
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -90,10 +73,6 @@ async def pyrogram_main(session_string):
                     print("Menunggu pesan masuk dari user ID 777000...")
                     await asyncio.Future()  # Menunggu pesan secara asinkron
                 elif choice == "3":
-                    print("Mengeluarkan semua sesi perangkat lain kecuali yang ini...")
-                    await logout_other_sessions(app)
-                    print("Semua sesi perangkat lain telah dikeluarkan.")
-                elif choice == "4":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
