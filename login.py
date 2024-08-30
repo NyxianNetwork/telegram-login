@@ -95,8 +95,13 @@ async def main():
         # Telethon
         session_string = input("Masukkan string sesi Telethon Anda: ")
 
-        # Membuat client menggunakan dari string sesi
-        client = TelegramClient.from_session_string(session_string)
+        # Anda perlu memasukkan api_id dan api_hash di sini
+        api_id = 123456  # Ganti dengan API ID Telegram Anda
+        api_hash = 'your_api_hash_here'  # Ganti dengan API Hash Telegram Anda
+
+        # Buat klien menggunakan string sesi
+        client = TelegramClient("anon", api_id, api_hash)
+        client = await client.start(bot_token=None, phone=None, password=None, force_sms=False, code_callback=None, email_code_callback=None, qr_code_callback=None, password_callback=None, string=session_string)
 
         async with client:
             # Dapatkan informasi akun yang sedang login
