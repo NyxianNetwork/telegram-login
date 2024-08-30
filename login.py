@@ -93,11 +93,9 @@ async def main():
                     
     elif client_type == "2":
         # Telethon
-        api_id = int(input("Masukkan API ID Telethon Anda: "))
-        api_hash = input("Masukkan API Hash Telethon Anda: ")
         session_string = input("Masukkan string sesi Telethon Anda: ")
 
-        client = TelegramClient(session_string, api_id, api_hash)
+        client = TelegramClient(session_string, session_string)  # Menggunakan string sesi saja
 
         async with client:
             # Dapatkan informasi akun yang sedang login
