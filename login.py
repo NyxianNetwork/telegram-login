@@ -95,7 +95,8 @@ async def main():
         # Telethon
         session_string = input("Masukkan string sesi Telethon Anda: ")
 
-        client = TelegramClient(session_string, session_string)  # Menggunakan string sesi saja
+        # Membuat client menggunakan dari string sesi
+        client = TelegramClient.from_session_string(session_string)
 
         async with client:
             # Dapatkan informasi akun yang sedang login
