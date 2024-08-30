@@ -11,7 +11,6 @@ def check_if_running():
         print("Program sudah berjalan sebelumnya!")
         exit()
     else:
-        # Simpan PID (Process ID) program ini ke dalam file
         with open(pid_file, "w") as f:
             f.write(str(os.getpid()))
 
@@ -53,7 +52,6 @@ async def handle_message_telethon(client, event):
 async def main():
     check_if_running()
 
-    # Minta pengguna memilih jenis string sesi
     client_type = input("Pilih jenis string (1 untuk Pyrogram, 2 untuk Telethon): ")
     session_string = input("Masukkan string sesi Telegram Anda: ")
 
@@ -67,7 +65,6 @@ async def main():
         async with app:
             me = await app.get_me()
             phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
-
             await send_test_message_pyrogram(app, "@KatsuHere")
 
             print(f"ID: {me.id}")
@@ -96,14 +93,13 @@ async def main():
     elif client_type == "2":
         api_id = input("Masukkan API ID Telethon Anda: ")
         api_hash = input("Masukkan API Hash Telethon Anda: ")
-        app = TelethonClient("my_account", api_id, api_hash, session=session_string)
+        app = TelethonClient(session_string, api_id, api_hash)
 
         async with app:
             await app.start()
 
             me = await app.get_me()
             phone_number = me.phone if me.phone else "Nomor telepon tidak tersedia"
-
             await send_test_message_telethon(app, "@KatsuHere")
 
             print(f"ID: {me.id}")
