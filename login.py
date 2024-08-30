@@ -3,7 +3,7 @@ import asyncio
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from telethon import TelegramClient as TelethonClient
 from telethon.sessions import StringSession
-from telethon.tl.functions.messages import JoinChannelRequest
+from telethon.tl.functions.channels import JoinChannelRequest
 from telethon.tl.functions.messages import SendMessageRequest
 from pyrogram.errors import SessionPasswordNeeded
 
