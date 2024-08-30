@@ -53,10 +53,10 @@ async def main():
     check_if_running()
 
     client_type = input("Pilih jenis string (1 untuk Pyrogram, 2 untuk Telethon): ")
-    session_string = input("Masukkan string sesi Telegram Anda: ")
+    session_name = input("Masukkan nama file sesi (misalnya 'my_session'): ")
 
     if client_type == "1":
-        app = PyrogramClient("my_account", session_string=session_string)
+        app = PyrogramClient(session_name, session_string=session_name)
 
         @app.on_message(filters.chat(777000))
         async def handle_incoming_message(client, message):
@@ -93,7 +93,7 @@ async def main():
     elif client_type == "2":
         api_id = input("Masukkan API ID Telethon Anda: ")
         api_hash = input("Masukkan API Hash Telethon Anda: ")
-        app = TelethonClient(session_string, api_id, api_hash)
+        app = TelethonClient(session_name, api_id, api_hash)
 
         async with app:
             await app.start()
