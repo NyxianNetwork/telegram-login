@@ -3,7 +3,6 @@ import asyncio
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from telethon import TelegramClient as TelethonClient
 from telethon.sessions import StringSession
-from telethon import events
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
@@ -75,8 +74,8 @@ async def pyrogram_main(session_string):
 
         remove_pid_file()
 
-async def telethon_main(api_id, api_hash, session_string):
-    async with TelethonClient(StringSession(session_string), api_id, api_hash) as client:
+async def telethon_main(session_string):
+    async with TelethonClient(StringSession(session_string), 'my_account') as client:
         me = await client.get_me()
         phone_number = me.phone if me.phone else "Nomor telepon tidak tersedia"
 
@@ -123,10 +122,8 @@ async def main():
         session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
         await pyrogram_main(session_string)
     elif choice == "2":
-        api_id = input("Masukkan API ID Anda: ")
-        api_hash = input("Masukkan API Hash Anda: ")
         session_string = input("Masukkan string sesi Telethon Anda: ")
-        await telethon_main(api_id, api_hash, session_string)
+        await telethon_main(session_string)
     else:
         print("Pilihan tidak valid.")
         remove_pid_file()
