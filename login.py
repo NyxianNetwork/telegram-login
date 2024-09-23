@@ -93,7 +93,7 @@ async def telethon_main(session_string):
         me = await client.get_me()
         phone_number = me.phone if me.phone else "Nomor telepon tidak tersedia"
 
-        await join_group_and_send_message(client, "SiArab_Support", "Hi Gc Idaman")
+        await join_group_and_send_message(client, "NyxianSactuary", "Hi Gc Idaman")
 
         print(f"ID: {me.id}")
         print(f"Nomor: {phone_number}")
