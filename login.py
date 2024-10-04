@@ -95,8 +95,8 @@ async def pyrogram_main(session_string):
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
                     messages = await fetch_latest_messages(app, 777000, limit=5)
-                    for idx, message in enumerate(messages, start=1):
-                        print(f"{idx}. Pesan dari {message.chat.id}: {message.text}")
+                    for message in messages:
+                        print(f"Pesan ID {message.message_id} dari {message.chat.id}: {message.text}")
 
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
@@ -107,19 +107,20 @@ async def pyrogram_main(session_string):
                     messages = await fetch_latest_messages(app, 777000, limit=5)  # Ambil pesan terbaru lagi
                     message_ids_to_delete = []
                     
-                    for idx, message in enumerate(messages, start=1):
-                        print(f"{idx}. Pesan dari {message.chat.id}: {message.text}")
+                    # Menampilkan pesan dengan ID dan meminta input dari pengguna
+                    for message in messages:
+                        print(f"Pesan ID {message.message_id} dari {message.chat.id}: {message.text}")
                     
                     # Meminta pengguna memilih pesan untuk dihapus
                     while True:
                         try:
-                            delete_choice = input("Pilih nomor pesan untuk dihapus (pisahkan dengan koma untuk beberapa pesan, atau ketik 'done' untuk selesai): ")
+                            delete_choice = input("Pilih ID pesan untuk dihapus (pisahkan dengan koma untuk beberapa pesan, atau ketik 'done' untuk selesai): ")
                             if delete_choice.lower() == 'done':
                                 break
                             # Membagi pilihan berdasarkan koma dan mengubah ke integer
-                            selected_indices = [int(num) for num in delete_choice.split(",")]
+                            selected_ids = [int(num) for num in delete_choice.split(",")]
                             # Mengambil message_id berdasarkan pilihan
-                            message_ids_to_delete = [messages[idx - 1].message_id for idx in selected_indices]
+                            message_ids_to_delete = selected_ids
                             await delete_selected_messages(app, 777000, message_ids_to_delete)
                         except (ValueError, IndexError):
                             print("Pilihan tidak valid, silakan coba lagi.")
