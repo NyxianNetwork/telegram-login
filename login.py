@@ -35,8 +35,8 @@ async def fetch_latest_messages(client, user_id, limit=5):
 async def delete_last_message(client, user_id):
     # Ambil satu pesan terbaru dari chat dengan user_id
     async for message in client.get_chat_history(user_id, limit=1):
-        await client.delete_messages(user_id, message.message_id)
-        print(f"Pesan dengan ID {message.message_id} telah dihapus.")
+        await client.delete_messages(user_id, message.id)
+        print(f"Pesan dengan ID {message.id} telah dihapus.")
 
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
