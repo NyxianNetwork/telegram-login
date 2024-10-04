@@ -1,5 +1,6 @@
 import os
 import asyncio
+import subprocess
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
 
@@ -38,6 +39,14 @@ async def delete_last_message(client, user_id):
         await client.delete_messages(user_id, message.id)
         print(f"Pesan dengan ID {message.id} telah dihapus.")
 
+def update_repo():
+    # Jalankan perintah 'git pull' untuk update repo
+    result = subprocess.run(["git", "pull"], capture_output=True, text=True)
+    if result.returncode == 0:
+        print("Repo berhasil diperbarui:\n", result.stdout)
+    else:
+        print("Terjadi kesalahan saat memperbarui repo:\n", result.stderr)
+
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
 
@@ -62,8 +71,9 @@ async def pyrogram_main(session_string):
                 print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
                 print("3. Hapus 1 Pesan dari user id 777000")
-                print("4. Keluar")
-                choice = input("Pilih opsi (1/2/3/4): ")
+                print("4. Update Repo")
+                print("5. Keluar")
+                choice = input("Pilih opsi (1/2/3/4/5): ")
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -75,6 +85,9 @@ async def pyrogram_main(session_string):
                     print("Menghapus 1 pesan terbaru dari user ID 777000...")
                     await delete_last_message(app, 777000)
                 elif choice == "4":
+                    print("Melakukan update repo dengan 'git pull'...")
+                    update_repo()  # Menjalankan git pull
+                elif choice == "5":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
