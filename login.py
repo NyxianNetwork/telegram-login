@@ -50,7 +50,8 @@ async def fetch_latest_messages(client, user_id, limit=5):
 
 async def delete_all_messages(client, user_id):
     try:
-        await client.delete_history(user_id)
+        async for message in client.get_chat_history(user_id):
+            await client.delete_messages(user_id, message.message_id)
         print("Seluruh pesan dari user ID 777000 telah dihapus.")
     except FloodWait as e:
         print(f"Terjadi FloodWait. Tunggu {e.x} detik sebelum mencoba lagi.")
