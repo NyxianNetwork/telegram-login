@@ -1,5 +1,6 @@
 import os
 import asyncio
+import json
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
 
@@ -18,6 +19,20 @@ def check_if_running():
 def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
+
+# Fungsi untuk menyimpan akun
+def save_account(session_string, account_name):
+    accounts = load_accounts()
+    accounts[account_name] = session_string
+    with open("accounts.json", "w") as f:
+        json.dump(accounts, f)
+
+# Fungsi untuk memuat akun yang tersimpan
+def load_accounts():
+    if os.path.exists("accounts.json"):
+        with open("accounts.json", "r") as f:
+            return json.load(f)
+    return {}
 
 async def join_group_and_send_message(client, group_url, message_text):
     try:
@@ -99,8 +114,35 @@ async def pyrogram_main(session_string):
 async def main():
     check_if_running()
 
-    session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
-    await pyrogram_main(session_string)
+    # Memuat akun yang tersimpan
+    accounts = load_accounts()
+    
+    print("Pilih opsi:")
+    print("1. Login Baru")
+    print("2. Login ke Akun Tersimpan")
+    
+    choice = input("Pilih opsi (1/2): ")
+    
+    if choice == "1":
+        session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
+        account_name = input("Masukkan nama akun untuk menyimpan sesi ini: ")
+        save_account(session_string, account_name)
+        await pyrogram_main(session_string)
+    elif choice == "2":
+        if accounts:
+            print("Akun yang tersimpan:")
+            for account_name in accounts.keys():
+                print(f"- {account_name}")
+            selected_account = input("Pilih nama akun untuk login: ")
+            if selected_account in accounts:
+                session_string = accounts[selected_account]
+                await pyrogram_main(session_string)
+            else:
+                print("Akun tidak ditemukan!")
+        else:
+            print("Tidak ada akun yang tersimpan.")
+    else:
+        print("Pilihan tidak valid. Silakan pilih lagi.")
 
 try:
     asyncio.run(main())
