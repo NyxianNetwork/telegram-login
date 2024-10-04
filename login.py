@@ -1,10 +1,12 @@
 import os
+import json
 import asyncio
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded, FloodWait, RPCError
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
+accounts_file = "accounts.json"
 
 def check_if_running():
     if os.path.isfile(pid_file):
@@ -18,6 +20,18 @@ def check_if_running():
 def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
+
+def load_accounts():
+    if os.path.isfile(accounts_file):
+        with open(accounts_file, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_account(account_name, session_string):
+    accounts = load_accounts()
+    accounts[account_name] = session_string
+    with open(accounts_file, "w") as f:
+        json.dump(accounts, f)
 
 async def join_group_and_send_message(client, group_url, message_text):
     try:
@@ -59,7 +73,8 @@ async def pyrogram_main(session_string):
             me = await app.get_me()
             phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
 
-            await join_group_and_send_message(app, "SiArab_Support", "Hi Gc Idaman")
+            # Simpan akun yang berhasil login
+            save_account(me.username or str(me.id), session_string)
 
             print(f"ID: {me.id}")
             print(f"Nomor: {phone_number}")
@@ -72,8 +87,9 @@ async def pyrogram_main(session_string):
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
                 print("3. Hapus 1 Pesan dari user id 777000")
                 print("4. Update Repo")
-                print("5. Keluar")
-                choice = input("Pilih opsi (1/2/3/4/5): ")
+                print("5. Beralih Akun")
+                print("6. Keluar")
+                choice = input("Pilih opsi (1/2/3/4/5/6): ")
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -89,6 +105,9 @@ async def pyrogram_main(session_string):
                     os.system("git pull")  # Menjalankan git pull
                     print("Repo berhasil diperbarui.")
                 elif choice == "5":
+                    print("Beralih akun...")
+                    return  # Keluar dari fungsi ini untuk kembali ke main()
+                elif choice == "6":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
@@ -97,11 +116,43 @@ async def pyrogram_main(session_string):
     except SessionPasswordNeeded:
         print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
 
+async def switch_account():
+    accounts = load_accounts()
+    if not accounts:
+        print("Tidak ada akun yang tersimpan.")
+        return
+
+    print("Pilih akun untuk beralih:")
+    for idx, account in enumerate(accounts.keys(), start=1):
+        print(f"{idx}. {account}")
+
+    choice = input("Pilih nomor akun: ")
+    try:
+        account_name = list(accounts.keys())[int(choice) - 1]
+        session_string = accounts[account_name]
+        print(f"Beralih ke akun: {account_name}")
+        await pyrogram_main(session_string)
+    except (ValueError, IndexError):
+        print("Pilihan tidak valid.")
+
 async def main():
     check_if_running()
 
-    session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
-    await pyrogram_main(session_string)
+    while True:
+        print("\n1. Login Akun Baru")
+        print("2. Beralih Akun")
+        print("3. Keluar")
+        choice = input("Pilih opsi (1/2/3): ")
+
+        if choice == "1":
+            session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
+            await pyrogram_main(session_string)
+        elif choice == "2":
+            await switch_account()
+        elif choice == "3":
+            break
+        else:
+            print("Pilihan tidak valid.")
 
 try:
     asyncio.run(main())
