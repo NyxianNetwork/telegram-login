@@ -3,6 +3,10 @@ import json
 import asyncio
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded, FloodWait, RPCError
+from pyrogram import emoji
+from pyrogram.errors import StickersetInvalid, YouBlockedUser
+from pyrogram.raw.functions.messages import DeleteHistory, GetStickerSet
+from pyrogram.raw.types import InputStickerSetShortName
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
