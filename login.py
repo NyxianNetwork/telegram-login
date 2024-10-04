@@ -59,14 +59,14 @@ async def display_account_details(me):
     print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
     print(f"Nomor Telepon: {me.phone_number if me.phone_number else 'Tidak ada'}")
 
-async def display_active_sessions(client):
+async def display_active_sessions(me):
     print("\nSesi Aktif:")
-    async for session in client.get_active_sessions():
-        print(f"ID: {session.id}")
-        print(f"Perangkat: {session.device}")
-        print(f"Lokasi: {session.location}")
-        print(f"Status: {'Aktif' if session.is_active else 'Tidak Aktif'}")
-        print("-" * 40)
+    print(f"User ID: {me.id}")
+    print(f"Username: @{me.username if me.username else 'Tidak ada'}")
+    print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
+    print("Perangkat dan Lokasi:")
+    print("Informasi sesi aktif hanya tersedia melalui API.")
+    print("-" * 40)
 
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
@@ -139,7 +139,7 @@ async def pyrogram_main(session_string):
                     await display_account_details(me)  # Menampilkan detail akun
 
                 elif choice == "7":
-                    await display_active_sessions(app)  # Menampilkan sesi aktif
+                    await display_active_sessions(me)  # Menampilkan sesi aktif
 
                 elif choice == "8":
                     break
