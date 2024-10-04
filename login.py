@@ -61,9 +61,9 @@ async def display_account_details(me):
 
 async def display_active_sessions(client):
     try:
-        active_sessions = await client.get_active_sessions()  # Mengambil sesi aktif
+        sessions = await client.get_sessions()  # Mengambil sesi aktif
         print("\nSesi Aktif:")
-        for session in active_sessions:
+        for session in sessions:
             print(f"ID: {session.id}, Perangkat: {session.device}, Lokasi: {session.location}")
     except Exception as e:
         print(f"Terjadi kesalahan saat mengambil sesi aktif: {e}")
