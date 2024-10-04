@@ -124,7 +124,7 @@ async def main():
         await pyrogram_main(session_string)
     elif choice == "2":
         try:
-            with open("saved_sessions.json") as f:
+            with open("accounts.json") as f:
                 sessions = json.load(f)
                 print("Akun Tersimpan:")
                 for idx, account in enumerate(sessions):
