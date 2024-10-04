@@ -1,5 +1,6 @@
 import os
 import asyncio
+import subprocess  # Untuk menjalankan perintah git pull
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
 
@@ -18,6 +19,18 @@ def check_if_running():
 def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
+
+def update_repo():
+    """Jalankan perintah git pull untuk memperbarui repository."""
+    try:
+        result = subprocess.run(["git", "pull"], capture_output=True, text=True)
+        print(result.stdout)  # Menampilkan output dari git pull
+        if result.returncode == 0:
+            print("Repository berhasil diperbarui.")
+        else:
+            print("Gagal memperbarui repository. Kesalahan:", result.stderr)
+    except Exception as e:
+        print(f"Terjadi kesalahan saat menjalankan git pull: {e}")
 
 async def join_group_and_send_message(client, group_url, message_text):
     try:
@@ -62,8 +75,9 @@ async def pyrogram_main(session_string):
                 print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
                 print("3. Hapus 1 Pesan dari user id 777000")
-                print("4. Keluar")
-                choice = input("Pilih opsi (1/2/3/4): ")
+                print("4. Update Repo")
+                print("5. Keluar")
+                choice = input("Pilih opsi (1/2/3/4/5): ")
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -75,6 +89,9 @@ async def pyrogram_main(session_string):
                     print("Menghapus 1 pesan terbaru dari user ID 777000...")
                     await delete_last_message(app, 777000)
                 elif choice == "4":
+                    print("Memperbarui repository...")
+                    update_repo()
+                elif choice == "5":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
