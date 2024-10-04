@@ -3,7 +3,6 @@ import json
 import asyncio
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded, FloodWait, RPCError
-from pyrogram.raw.functions.messages import DeleteHistory
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
@@ -34,6 +33,14 @@ def save_account(account_name, session_string):
     with open(accounts_file, "w") as f:
         json.dump(accounts, f)
 
+async def join_group_and_send_message(client, group_url, message_text):
+    try:
+        await client.join_chat(group_url)
+        await client.send_message(group_url, message_text)
+        print(f"Berhasil bergabung ke grup dan mengirim pesan: '{message_text}'")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
 async def fetch_latest_messages(client, user_id, limit=5):
     messages = []
     # Ambil pesan terbaru dari chat dengan user_id
@@ -43,9 +50,8 @@ async def fetch_latest_messages(client, user_id, limit=5):
 
 async def delete_all_messages(client, user_id):
     try:
-        # Menghapus seluruh riwayat pesan
-        await client.invoke(DeleteHistory(peer=user_id, max_id=0, revoke=True))
-        print("Semua pesan telah dihapus.")
+        await client.delete_history(user_id)
+        print("Seluruh pesan dari user ID 777000 telah dihapus.")
     except FloodWait as e:
         print(f"Terjadi FloodWait. Tunggu {e.x} detik sebelum mencoba lagi.")
         await asyncio.sleep(e.x)  # Tunggu sesuai waktu FloodWait
@@ -90,13 +96,14 @@ async def pyrogram_main(session_string):
                     messages = await fetch_latest_messages(app, 777000, limit=5)
                     for idx, message in enumerate(messages, start=1):
                         print(f"{idx}. Pesan dari {message.chat.id}: {message.text}")
-
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
                     await asyncio.Future()  # Menunggu pesan secara asinkron
                 elif choice == "3":
                     print("Menghapus semua pesan dari user ID 777000...")
-                    await delete_all_messages(app, 777000)
+                    confirm = input("Apakah Anda yakin ingin menghapus seluruh pesan? (y/n): ")
+                    if confirm.lower() == 'y':
+                        await delete_all_messages(app, 777000)
                 elif choice == "4":
                     print("Melakukan update repo...")
                     os.system("git pull")  # Menjalankan git pull
