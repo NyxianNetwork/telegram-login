@@ -33,14 +33,6 @@ def save_account(account_name, session_string):
     with open(accounts_file, "w") as f:
         json.dump(accounts, f)
 
-async def join_group_and_send_message(client, group_url, message_text):
-    try:
-        await client.join_chat(group_url)
-        await client.send_message(group_url, message_text)
-        print(f"Berhasil bergabung ke grup dan mengirim pesan: '{message_text}'")
-    except Exception as e:
-        print(f"Terjadi kesalahan: {e}")
-
 async def fetch_latest_messages(client, user_id, limit=5):
     messages = []
     # Ambil pesan terbaru dari chat dengan user_id
@@ -96,11 +88,24 @@ async def pyrogram_main(session_string):
                     messages = await fetch_latest_messages(app, 777000, limit=5)
                     for idx, message in enumerate(messages, start=1):
                         print(f"{idx}. Pesan dari {message.chat.id}: {message.text}")
+                    
+                    print("\nHapus Pesan")
+                    delete_choice = input("Masukkan nomor pesan yang ingin dihapus (atau tekan Enter untuk kembali): ")
+                    if delete_choice.strip():
+                        try:
+                            delete_index = int(delete_choice) - 1
+                            if 0 <= delete_index < len(messages):
+                                await delete_message(app, 777000, messages[delete_index].message_id)
+                            else:
+                                print("Nomor pesan tidak valid.")
+                        except ValueError:
+                            print("Input tidak valid, silakan masukkan nomor yang benar.")
+
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
                     await asyncio.Future()  # Menunggu pesan secara asinkron
                 elif choice == "3":
-                    print("Menghapus 1 pesan berdasarkan nomor urut dari user ID 777000...")
+                    print("Menghapus pesan berdasarkan nomor urut dari user ID 777000...")
                     messages = await fetch_latest_messages(app, 777000, limit=5)
                     if messages:
                         for idx, message in enumerate(messages, start=1):
