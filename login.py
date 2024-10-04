@@ -1,4 +1,5 @@
 import os
+import sys
 import asyncio
 import json
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
@@ -116,6 +117,7 @@ async def pyrogram_main(session_string):
                     print("Melakukan update repo...")
                     os.system("git pull")  # Menjalankan git pull
                     print("Repo berhasil diperbarui.")
+                    os.execv(sys.executable, ['python'] + [os.path.abspath(__file__)])  # Mulai ulang program
 
                 elif choice == "5":
                     print("Beralih akun...")
