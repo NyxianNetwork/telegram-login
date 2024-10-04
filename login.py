@@ -48,15 +48,15 @@ async def fetch_latest_messages(client, user_id, limit=5):
         messages.append(message)
     return messages
 
-async def delete_all_messages(client, user_id):
+async def delete_selected_messages(client, user_id, message_ids):
     try:
-        async for message in client.get_chat_history(user_id):
-            await client.delete_messages(user_id, message.message_id)
-        print("Seluruh pesan dari user ID 777000 telah dihapus.")
+        for message_id in message_ids:
+            await client.delete_messages(user_id, message_id)
+        print("Pesan yang dipilih telah dihapus.")
     except FloodWait as e:
         print(f"Terjadi FloodWait. Tunggu {e.x} detik sebelum mencoba lagi.")
         await asyncio.sleep(e.x)  # Tunggu sesuai waktu FloodWait
-        await delete_all_messages(client, user_id)  # Coba lagi setelah menunggu
+        await delete_selected_messages(client, user_id, message_ids)  # Coba lagi setelah menunggu
     except RPCError as e:
         print(f"Kesalahan saat menghapus pesan: {e}")
     except Exception as e:
@@ -86,7 +86,7 @@ async def pyrogram_main(session_string):
                 print("\nMenu:")
                 print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
-                print("3. Hapus Semua Pesan Dari user id 777000")
+                print("3. Hapus Pesan Terpilih Dari user id 777000")
                 print("4. Update Repo")
                 print("5. Beralih Akun")
                 print("6. Keluar")
@@ -97,21 +97,42 @@ async def pyrogram_main(session_string):
                     messages = await fetch_latest_messages(app, 777000, limit=5)
                     for idx, message in enumerate(messages, start=1):
                         print(f"{idx}. Pesan dari {message.chat.id}: {message.text}")
+
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
                     await asyncio.Future()  # Menunggu pesan secara asinkron
+
                 elif choice == "3":
-                    print("Menghapus semua pesan dari user ID 777000...")
-                    confirm = input("Apakah Anda yakin ingin menghapus seluruh pesan? (y/n): ")
-                    if confirm.lower() == 'y':
-                        await delete_all_messages(app, 777000)
+                    print("Menghapus pesan terpilih dari user ID 777000...")
+                    messages = await fetch_latest_messages(app, 777000, limit=5)  # Ambil pesan terbaru lagi
+                    message_ids_to_delete = []
+                    
+                    for idx, message in enumerate(messages, start=1):
+                        print(f"{idx}. Pesan dari {message.chat.id}: {message.text}")
+                    
+                    # Meminta pengguna memilih pesan untuk dihapus
+                    while True:
+                        try:
+                            delete_choice = input("Pilih nomor pesan untuk dihapus (pisahkan dengan koma untuk beberapa pesan, atau ketik 'done' untuk selesai): ")
+                            if delete_choice.lower() == 'done':
+                                break
+                            # Membagi pilihan berdasarkan koma dan mengubah ke integer
+                            selected_indices = [int(num) for num in delete_choice.split(",")]
+                            # Mengambil message_id berdasarkan pilihan
+                            message_ids_to_delete = [messages[idx - 1].message_id for idx in selected_indices]
+                            await delete_selected_messages(app, 777000, message_ids_to_delete)
+                        except (ValueError, IndexError):
+                            print("Pilihan tidak valid, silakan coba lagi.")
+                
                 elif choice == "4":
                     print("Melakukan update repo...")
                     os.system("git pull")  # Menjalankan git pull
                     print("Repo berhasil diperbarui.")
+
                 elif choice == "5":
                     print("Beralih akun...")
                     return  # Keluar dari fungsi ini untuk kembali ke main()
+
                 elif choice == "6":
                     break
                 else:
