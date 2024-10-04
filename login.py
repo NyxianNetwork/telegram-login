@@ -42,20 +42,20 @@ async def join_group_and_send_message(client, group_url, message_text):
         print(f"Terjadi kesalahan: {e}")
 
 async def fetch_latest_messages(client, user_id, limit=5):
+    messages = []
     # Ambil pesan terbaru dari chat dengan user_id
     async for message in client.get_chat_history(user_id, limit=limit):
-        print(f"Pesan dari {message.chat.id}: {message.text}")
+        messages.append(message)
+    return messages
 
-async def delete_last_message(client, user_id):
+async def delete_message(client, user_id, message_id):
     try:
-        # Ambil satu pesan terbaru dari chat dengan user_id
-        async for message in client.get_chat_history(user_id, limit=1):
-            await client.delete_messages(user_id, message.message_id)
-            print(f"Pesan dengan ID {message.message_id} telah dihapus.")
+        await client.delete_messages(user_id, message_id)
+        print(f"Pesan dengan ID {message_id} telah dihapus.")
     except FloodWait as e:
         print(f"Terjadi FloodWait. Tunggu {e.x} detik sebelum mencoba lagi.")
         await asyncio.sleep(e.x)  # Tunggu sesuai waktu FloodWait
-        await delete_last_message(client, user_id)  # Coba lagi setelah menunggu
+        await delete_message(client, user_id, message_id)  # Coba lagi setelah menunggu
     except RPCError as e:
         print(f"Kesalahan saat menghapus pesan: {e}")
     except Exception as e:
@@ -93,13 +93,30 @@ async def pyrogram_main(session_string):
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
-                    await fetch_latest_messages(app, 777000)
+                    messages = await fetch_latest_messages(app, 777000, limit=5)
+                    for idx, message in enumerate(messages, start=1):
+                        print(f"{idx}. Pesan dari {message.chat.id}: {message.text}")
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
                     await asyncio.Future()  # Menunggu pesan secara asinkron
                 elif choice == "3":
-                    print("Menghapus 1 pesan terbaru dari user ID 777000...")
-                    await delete_last_message(app, 777000)
+                    print("Menghapus 1 pesan berdasarkan nomor urut dari user ID 777000...")
+                    messages = await fetch_latest_messages(app, 777000, limit=5)
+                    if messages:
+                        for idx, message in enumerate(messages, start=1):
+                            print(f"{idx}. Pesan dari {message.chat.id}: {message.text}")
+
+                        delete_choice = input("Pilih nomor pesan untuk dihapus: ")
+                        try:
+                            delete_index = int(delete_choice) - 1
+                            if 0 <= delete_index < len(messages):
+                                await delete_message(app, 777000, messages[delete_index].message_id)
+                            else:
+                                print("Nomor pesan tidak valid.")
+                        except ValueError:
+                            print("Input tidak valid, silakan masukkan nomor yang benar.")
+                    else:
+                        print("Tidak ada pesan untuk ditampilkan.")
                 elif choice == "4":
                     print("Melakukan update repo...")
                     os.system("git pull")  # Menjalankan git pull
