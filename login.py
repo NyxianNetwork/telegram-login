@@ -152,8 +152,21 @@ async def switch_account():
 async def main():
     check_if_running()
 
-    session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
-    await pyrogram_main(session_string)
+    print("Selamat datang di aplikasi Telegram CLI!")
+    print("1. Login Baru")
+    print("2. Login ke Akun Tersimpan")
+    
+    while True:
+        choice = input("Pilih opsi (1/2): ")
+        if choice == "1":
+            session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
+            await pyrogram_main(session_string)
+            break
+        elif choice == "2":
+            await switch_account()  # Memanggil fungsi untuk beralih akun
+            break
+        else:
+            print("Pilihan tidak valid. Silakan pilih lagi.")
 
 try:
     asyncio.run(main())
