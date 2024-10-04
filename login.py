@@ -52,6 +52,13 @@ async def delete_selected_messages(client, user_id, message_ids):
     for message_id in message_ids:
         print(f"Pesan dengan ID {message_id} telah dihapus.")
 
+async def display_account_details(me):
+    print("\nDetail Akun:")
+    print(f"User ID: {me.id}")
+    print(f"Username: @{me.username if me.username else 'Tidak ada'}")
+    print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
+    print(f"Nomor Telepon: {me.phone_number if me.phone_number else 'Tidak ada'}")
+
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
 
@@ -62,13 +69,7 @@ async def pyrogram_main(session_string):
     try:
         async with app:
             me = await app.get_me()
-            phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
             save_account(me.username or str(me.id), session_string)
-
-            print(f"ID: {me.id}")
-            print(f"Nomor: {phone_number}")
-            print(f"Username: @{me.username}")
-            print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
 
             while True:
                 print("\nMenu:")
@@ -77,8 +78,9 @@ async def pyrogram_main(session_string):
                 print("3. Hapus Pesan Terpilih Dari user id 777000")
                 print("4. Update Repo")
                 print("5. Beralih Akun")
-                print("6. Keluar")
-                choice = input("Pilih opsi (1/2/3/4/5/6): ")
+                print("6. Detail Akun")
+                print("7. Keluar")
+                choice = input("Pilih opsi (1/2/3/4/5/6/7): ")
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -112,7 +114,7 @@ async def pyrogram_main(session_string):
                             await delete_selected_messages(app, 777000, message_ids_to_delete)
                         except (ValueError, IndexError):
                             print("Pilihan tidak valid, silakan coba lagi.")
-                
+
                 elif choice == "4":
                     print("Melakukan update repo...")
                     os.system("git pull")  # Menjalankan git pull
@@ -124,6 +126,9 @@ async def pyrogram_main(session_string):
                     await switch_account()  # Menjalankan fungsi untuk beralih akun
 
                 elif choice == "6":
+                    await display_account_details(me)  # Menampilkan detail akun
+
+                elif choice == "7":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
