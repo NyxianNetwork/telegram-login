@@ -43,24 +43,9 @@ async def join_group_and_send_message(client, group_url, message_text):
 
 async def fetch_latest_messages(client, user_id, limit=5):
     messages = []
-    # Ambil pesan terbaru dari chat dengan user_id
     async for message in client.get_chat_history(user_id, limit=limit):
         messages.append(message)
     return messages
-
-async def delete_selected_messages(client, user_id, message_ids):
-    try:
-        for message_id in message_ids:
-            await client.delete_messages(user_id, message_id)
-        print("Pesan yang dipilih telah dihapus.")
-    except FloodWait as e:
-        print(f"Terjadi FloodWait. Tunggu {e.x} detik sebelum mencoba lagi.")
-        await asyncio.sleep(e.x)  # Tunggu sesuai waktu FloodWait
-        await delete_selected_messages(client, user_id, message_ids)  # Coba lagi setelah menunggu
-    except RPCError as e:
-        print(f"Kesalahan saat menghapus pesan: {e}")
-    except Exception as e:
-        print(f"Terjadi kesalahan: {e}")
 
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
@@ -73,8 +58,6 @@ async def pyrogram_main(session_string):
         async with app:
             me = await app.get_me()
             phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
-
-            # Simpan akun yang berhasil login
             save_account(me.username or str(me.id), session_string)
 
             print(f"ID: {me.id}")
@@ -96,7 +79,7 @@ async def pyrogram_main(session_string):
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
                     messages = await fetch_latest_messages(app, 777000, limit=5)
                     for message in messages:
-                        print(f"Pesan ID {message.message_id} dari {message.chat.id}: {message.text}")
+                        print(f"Pesan ID {message.id} dari {message.chat.id}: {message.text}")  # Gunakan `message.id` bukan `message.message_id`
 
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
@@ -109,7 +92,7 @@ async def pyrogram_main(session_string):
                     
                     # Menampilkan pesan dengan ID dan meminta input dari pengguna
                     for message in messages:
-                        print(f"Pesan ID {message.message_id} dari {message.chat.id}: {message.text}")
+                        print(f"Pesan ID {message.id} dari {message.chat.id}: {message.text}")  # Perbarui di sini
                     
                     # Meminta pengguna memilih pesan untuk dihapus
                     while True:
@@ -142,6 +125,7 @@ async def pyrogram_main(session_string):
             remove_pid_file()
     except SessionPasswordNeeded:
         print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
+
 
 async def switch_account():
     accounts = load_accounts()
