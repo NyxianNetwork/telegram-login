@@ -1,8 +1,7 @@
 import os
 import asyncio
-import subprocess  # Untuk menjalankan perintah git pull
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
-from pyrogram.errors import SessionPasswordNeeded
+from pyrogram.errors import SessionPasswordNeeded, FloodWait, RPCError
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
@@ -20,18 +19,6 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-def update_repo():
-    """Jalankan perintah git pull untuk memperbarui repository."""
-    try:
-        result = subprocess.run(["git", "pull"], capture_output=True, text=True)
-        print(result.stdout)  # Menampilkan output dari git pull
-        if result.returncode == 0:
-            print("Repository berhasil diperbarui.")
-        else:
-            print("Gagal memperbarui repository. Kesalahan:", result.stderr)
-    except Exception as e:
-        print(f"Terjadi kesalahan saat menjalankan git pull: {e}")
-
 async def join_group_and_send_message(client, group_url, message_text):
     try:
         await client.join_chat(group_url)
@@ -46,10 +33,19 @@ async def fetch_latest_messages(client, user_id, limit=5):
         print(f"Pesan dari {message.chat.id}: {message.text}")
 
 async def delete_last_message(client, user_id):
-    # Ambil satu pesan terbaru dari chat dengan user_id
-    async for message in client.get_chat_history(user_id, limit=1):
-        await client.delete_messages(user_id, message.id)
-        print(f"Pesan dengan ID {message.id} telah dihapus.")
+    try:
+        # Ambil satu pesan terbaru dari chat dengan user_id
+        async for message in client.get_chat_history(user_id, limit=1):
+            await client.delete_messages(user_id, message.message_id)
+            print(f"Pesan dengan ID {message.message_id} telah dihapus.")
+    except FloodWait as e:
+        print(f"Terjadi FloodWait. Tunggu {e.x} detik sebelum mencoba lagi.")
+        await asyncio.sleep(e.x)  # Tunggu sesuai waktu FloodWait
+        await delete_last_message(client, user_id)  # Coba lagi setelah menunggu
+    except RPCError as e:
+        print(f"Kesalahan saat menghapus pesan: {e}")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
 
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
@@ -89,8 +85,9 @@ async def pyrogram_main(session_string):
                     print("Menghapus 1 pesan terbaru dari user ID 777000...")
                     await delete_last_message(app, 777000)
                 elif choice == "4":
-                    print("Memperbarui repository...")
-                    update_repo()
+                    print("Melakukan update repo...")
+                    os.system("git pull")  # Menjalankan git pull
+                    print("Repo berhasil diperbarui.")
                 elif choice == "5":
                     break
                 else:
