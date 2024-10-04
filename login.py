@@ -3,10 +3,7 @@ import json
 import asyncio
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded, FloodWait, RPCError
-from pyrogram import emoji
-from pyrogram.errors import StickersetInvalid, YouBlockedUser
-from pyrogram.raw.functions.messages import DeleteHistory, GetStickerSet
-from pyrogram.raw.types import InputStickerSetShortName
+from pyrogram.raw.functions.messages import DeleteHistory
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
@@ -46,13 +43,13 @@ async def fetch_latest_messages(client, user_id, limit=5):
 
 async def delete_all_messages(client, user_id):
     try:
-        # Menghapus semua pesan dari user_id
-        await client.delete_history(user_id)
-        print(f"Semua pesan dari user ID {user_id} telah dihapus.")
+        # Menghapus seluruh riwayat pesan
+        await client.invoke(DeleteHistory(peer=user_id, max_id=0, revoke=True))
+        print("Semua pesan telah dihapus.")
     except FloodWait as e:
         print(f"Terjadi FloodWait. Tunggu {e.x} detik sebelum mencoba lagi.")
-        await asyncio.sleep(e.x)
-        await delete_all_messages(client, user_id)
+        await asyncio.sleep(e.x)  # Tunggu sesuai waktu FloodWait
+        await delete_all_messages(client, user_id)  # Coba lagi setelah menunggu
     except RPCError as e:
         print(f"Kesalahan saat menghapus pesan: {e}")
     except Exception as e:
@@ -82,7 +79,7 @@ async def pyrogram_main(session_string):
                 print("\nMenu:")
                 print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
-                print("3. Hapus Semua Pesan dari user id 777000")
+                print("3. Hapus Semua Pesan Dari user id 777000")
                 print("4. Update Repo")
                 print("5. Beralih Akun")
                 print("6. Keluar")
@@ -97,23 +94,18 @@ async def pyrogram_main(session_string):
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
                     await asyncio.Future()  # Menunggu pesan secara asinkron
-                
                 elif choice == "3":
                     print("Menghapus semua pesan dari user ID 777000...")
                     await delete_all_messages(app, 777000)
-
                 elif choice == "4":
                     print("Melakukan update repo...")
                     os.system("git pull")  # Menjalankan git pull
                     print("Repo berhasil diperbarui.")
-                
                 elif choice == "5":
                     print("Beralih akun...")
                     return  # Keluar dari fungsi ini untuk kembali ke main()
-                
                 elif choice == "6":
                     break
-                
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
 
