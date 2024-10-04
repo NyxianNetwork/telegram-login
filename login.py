@@ -95,7 +95,7 @@ async def pyrogram_main(session_string):
                         try:
                             delete_index = int(delete_choice) - 1
                             if 0 <= delete_index < len(messages):
-                                await delete_message(app, 777000, messages[delete_index].message_id)
+                                await delete_message(app, messages[delete_index].chat.id, messages[delete_index].message_id)
                             else:
                                 print("Nomor pesan tidak valid.")
                         except ValueError:
@@ -115,7 +115,7 @@ async def pyrogram_main(session_string):
                         try:
                             delete_index = int(delete_choice) - 1
                             if 0 <= delete_index < len(messages):
-                                await delete_message(app, 777000, messages[delete_index].message_id)
+                                await delete_message(app, messages[delete_index].chat.id, messages[delete_index].message_id)
                             else:
                                 print("Nomor pesan tidak valid.")
                         except ValueError:
