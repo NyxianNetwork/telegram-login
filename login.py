@@ -1,9 +1,10 @@
+buatlah ketika berhasil login menggunakan pyrogram maka akan ada pilihan "Killer Session" untuk menghentikan sessi seperti logika yang digunakan pada anj.py pada kode login.py dibawah:
+
 import os
 import asyncio
 import json
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
-from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
@@ -13,6 +14,7 @@ def check_if_running():
         print("Program sudah berjalan sebelumnya!")
         exit()
     else:
+        # Simpan PID (Process ID) program ini ke dalam file
         with open(pid_file, "w") as f:
             f.write(str(os.getpid()))
 
@@ -51,22 +53,6 @@ async def delete_selected_messages(client, user_id, message_ids):
     for message_id in message_ids:
         print(f"Pesan dengan ID {message_id} telah dihapus.")
 
-async def kill_session(client):
-    sessions = (await client.invoke(GetAuthorizations())).authorizations
-    print("\nDaftar sesi aktif:")
-    for idx, session in enumerate(sessions, 1):
-        print(f"{idx}. Perangkat: {session.device_model} | IP: {session.ip} | Negara: {session.country} | Hash: {session.hash}")
-
-    try:
-        choice = int(input("\nPilih sesi yang ingin dihentikan (masukkan nomor): ")) - 1
-        session_to_kill = sessions[choice]
-        await client.invoke(ResetAuthorization(hash=session_to_kill.hash))
-        print("Sesi berhasil dihentikan.")
-    except (IndexError, ValueError):
-        print("Pilihan tidak valid.")
-    except Exception as e:
-        print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
-
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
 
@@ -92,9 +78,8 @@ async def pyrogram_main(session_string):
                 print("3. Hapus Pesan Terpilih Dari user id 777000")
                 print("4. Update Repo")
                 print("5. Beralih Akun")
-                print("6. Killer Session")
-                print("7. Keluar")
-                choice = input("Pilih opsi (1/2/3/4/5/6/7): ")
+                print("6. Keluar")
+                choice = input("Pilih opsi (1/2/3/4/5/6): ")
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -108,18 +93,22 @@ async def pyrogram_main(session_string):
 
                 elif choice == "3":
                     print("Menghapus pesan terpilih dari user ID 777000...")
-                    messages = await fetch_latest_messages(app, 777000, limit=5)
+                    messages = await fetch_latest_messages(app, 777000, limit=5)  # Ambil pesan terbaru lagi
                     message_ids_to_delete = []
                     
+                    # Menampilkan pesan dengan ID dan meminta input dari pengguna
                     for message in messages:
                         print(f"Pesan ID {message.id} dari {message.chat.id}: {message.text}")
                     
+                    # Meminta pengguna memilih pesan untuk dihapus
                     while True:
                         try:
                             delete_choice = input("Pilih ID pesan untuk dihapus (pisahkan dengan koma untuk beberapa pesan, atau ketik 'done' untuk selesai): ")
                             if delete_choice.lower() == 'done':
                                 break
+                            # Membagi pilihan berdasarkan koma dan mengubah ke integer
                             selected_ids = [int(num) for num in delete_choice.split(",")]
+                            # Mengambil message_id berdasarkan pilihan
                             message_ids_to_delete = selected_ids
                             await delete_selected_messages(app, 777000, message_ids_to_delete)
                         except (ValueError, IndexError):
@@ -127,17 +116,14 @@ async def pyrogram_main(session_string):
                 
                 elif choice == "4":
                     print("Melakukan update repo...")
-                    os.system("git pull")
+                    os.system("git pull")  # Menjalankan git pull
                     print("Repo berhasil diperbarui.")
 
                 elif choice == "5":
                     print("Beralih akun...")
-                    await switch_account()
+                    await switch_account()  # Menjalankan fungsi untuk beralih akun
 
                 elif choice == "6":
-                    await kill_session(app)
-
-                elif choice == "7":
                     break
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
@@ -179,7 +165,7 @@ async def main():
             await pyrogram_main(session_string)
             break
         elif choice == "2":
-            await switch_account()
+            await switch_account()  # Memanggil fungsi untuk beralih akun
             break
         else:
             print("Pilihan tidak valid. Silakan pilih lagi.")
