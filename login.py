@@ -1,4 +1,3 @@
-buatlah ketika berhasil login menggunakan pyrogram maka akan ada pilihan "Killer Session" untuk menghentikan sessi seperti logika yang digunakan pada anj.py pada kode login.py dibawah:
 
 import os
 import asyncio
