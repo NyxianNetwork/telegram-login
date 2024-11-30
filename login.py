@@ -80,17 +80,16 @@ async def pyrogram_main(session_string):
 async def telethon_main(session_string, api_id, api_hash):
     app = TelegramClient(StringSession(session_string), api_id, api_hash)
 
-    async with app:
-        await app.connect()
-        me = await app.get_me()
-        save_account(me.username or str(me.id), session_string, "telethon", api_id, api_hash)
+    await app.start()  # Tidak meminta input tambahan
+    me = await app.get_me()
+    save_account(me.username or str(me.id), session_string, "telethon", api_id, api_hash)
 
-        print(f"ID: {me.id}")
-        print(f"Nomor: {me.phone if me.phone else 'Nomor telepon tidak tersedia'}")
-        print(f"Username: @{me.username}")
-        print(f"Nama Lengkap: {me.first_name} {me.last_name or ''}")
+    print(f"ID: {me.id}")
+    print(f"Nomor: {me.phone if me.phone else 'Nomor telepon tidak tersedia'}")
+    print(f"Username: @{me.username}")
+    print(f"Nama Lengkap: {me.first_name} {me.last_name or ''}")
 
-        await menu_loop(app, "telethon")
+    await menu_loop(app, "telethon")
 
 async def menu_loop(client, client_type):
     while True:
