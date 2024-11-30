@@ -199,23 +199,28 @@ async def switch_account():
     for idx, account in enumerate(accounts.keys(), start=1):
         print(f"{idx}. {account}")
 
-    choice = input("Pilih akun untuk beralih (masukkan nomor): ")
     try:
-        choice = int(choice) - 1
+        choice = int(input("Pilih akun untuk beralih (masukkan nomor): ")) - 1
         account_name = list(accounts.keys())[choice]
         session_info = accounts[account_name]
+
+        # Validasi data akun
+        if not isinstance(session_info, dict) or "session" not in session_info or "client_type" not in session_info:
+            raise ValueError("Data akun tidak valid.")
 
         # Cek jenis klien yang digunakan untuk akun ini
         if session_info["client_type"] == "pyrogram":
             await pyrogram_main(session_info["session"])
         elif session_info["client_type"] == "telethon":
+            api_id = int(input("Masukkan API ID Anda: "))
+            api_hash = input("Masukkan API Hash Anda: ")
             await telethon_main(session_info["session"], api_id, api_hash)
         else:
             print("Jenis klien tidak dikenali.")
-    except (ValueError, IndexError):
-        print("Pilihan tidak valid.")
-    except KeyError as e:
-        print(f"Kesalahan akses data akun: {e}")
+    except (ValueError, IndexError, KeyError) as e:
+        print(f"Kesalahan: {e}")
+    except Exception as e:
+        print(f"Terjadi kesalahan yang tidak terduga: {e}")
 
 async def main():
     check_if_running()
@@ -230,22 +235,18 @@ async def main():
         if choice == "1":
             session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
             await pyrogram_main(session_string)
-            break
         elif choice == "2":
             session_string = input("Masukkan string sesi Telegram (Telethon) Anda: ")
             api_id = int(input("Masukkan API ID Anda: "))
             api_hash = input("Masukkan API Hash Anda: ")
             await telethon_main(session_string, api_id, api_hash)
-            break
         elif choice == "3":
             await switch_account()
-            break
         else:
             print("Pilihan tidak valid, silakan coba lagi.")
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\nProgram dihentikan.")
-        remove_pid_file()
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
