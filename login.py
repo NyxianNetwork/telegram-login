@@ -7,7 +7,6 @@ from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-# Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
 
 def check_if_running():
@@ -22,9 +21,14 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-def save_account(account_name, session_string, client_type):
+def save_account(account_name, session_string, client_type, api_id=None, api_hash=None):
     accounts = load_accounts()
-    accounts[account_name] = {"session": session_string, "client_type": client_type}
+    accounts[account_name] = {
+        "session": session_string,
+        "client_type": client_type,
+        "api_id": api_id,
+        "api_hash": api_hash
+    }
     with open("accounts.json", "w") as f:
         json.dump(accounts, f)
 
@@ -77,9 +81,9 @@ async def telethon_main(session_string, api_id, api_hash):
     app = TelegramClient(StringSession(session_string), api_id, api_hash)
 
     async with app:
-        await app.connect()  # Pastikan client terhubung tanpa meminta input nomor telepon
+        await app.connect()
         me = await app.get_me()
-        save_account(me.username or str(me.id), session_string, "telethon")
+        save_account(me.username or str(me.id), session_string, "telethon", api_id, api_hash)
 
         print(f"ID: {me.id}")
         print(f"Nomor: {me.phone if me.phone else 'Nomor telepon tidak tersedia'}")
@@ -138,7 +142,7 @@ async def switch_account():
         if session_info["client_type"] == "pyrogram":
             await pyrogram_main(session_info["session"])
         else:
-            await telethon_main(session_info["session"], session_info.get("api_id"), session_info.get("api_hash"))
+            await telethon_main(session_info["session"], session_info["api_id"], session_info["api_hash"])
     except (ValueError, IndexError):
         print("Pilihan tidak valid.")
 
