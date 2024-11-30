@@ -4,8 +4,10 @@ import json
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
 from telethon import TelegramClient as TelethonClient
+from telethon.errors import SessionPasswordNeededError
+from telethon.tl.functions.auth import LogOut
+from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 
-# Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
 
 def check_if_running():
@@ -20,9 +22,9 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-def save_account(account_name, session_string):
+def save_account(account_name, session_string, client_type):
     accounts = load_accounts()
-    accounts[account_name] = session_string
+    accounts[account_name] = {"session_string": session_string, "client_type": client_type}
     with open("accounts.json", "w") as f:
         json.dump(accounts, f)
 
@@ -32,7 +34,7 @@ def load_accounts():
             return json.load(f)
     return {}
 
-async def kill_session(client):
+async def kill_session_pyrogram(client):
     sessions = (await client.invoke(GetAuthorizations())).authorizations
     print("\nDaftar sesi aktif:")
     for idx, session in enumerate(sessions, 1):
@@ -48,62 +50,61 @@ async def kill_session(client):
     except Exception as e:
         print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
 
+async def kill_session_telethon(client):
+    print("Mengakhiri semua sesi kecuali sesi saat ini...")
+    await client(LogOut())
+    print("Sesi lainnya telah diakhiri.")
+
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
 
     try:
         async with app:
             me = await app.get_me()
-            save_account(me.username or str(me.id), session_string)
+            save_account(me.username or str(me.id), session_string, "pyrogram")
 
-            print(f"ID: {me.id}")
-            print(f"Username: @{me.username}")
-            print(f"Nama: {me.first_name} {me.last_name if me.last_name else ''}")
+            print(f"Login sebagai: {me.first_name} {me.last_name if me.last_name else ''} (@{me.username})")
 
             while True:
-                print("\nMenu:")
+                print("\nMenu Pyrogram:")
                 print("1. Killer Session")
                 print("2. Keluar")
                 choice = input("Pilih opsi (1/2): ")
 
                 if choice == "1":
-                    await kill_session(app)
-
+                    await kill_session_pyrogram(app)
                 elif choice == "2":
                     break
-
-            remove_pid_file()
+                else:
+                    print("Pilihan tidak valid.")
     except SessionPasswordNeeded:
-        print("Akun Anda memerlukan autentikasi dua faktor.")
+        print("Autentikasi dua faktor diperlukan.")
 
-async def telethon_main(session_string):
-    api_id = 123456  # Ganti dengan API ID Anda
-    api_hash = "your_api_hash"  # Ganti dengan API Hash Anda
-    client = TelethonClient("my_account", api_id, api_hash, session=session_string)
+async def telethon_main(api_id, api_hash, session_name):
+    client = TelethonClient(session_name, api_id, api_hash)
 
     try:
-        async with client:
-            me = await client.get_me()
-            save_account(me.username or str(me.id), session_string)
+        await client.start()
+        me = await client.get_me()
+        session_string = await client.export_session_string()
+        save_account(me.username or str(me.id), session_string, "telethon")
 
-            print(f"ID: {me.id}")
-            print(f"Username: @{me.username}")
-            print(f"Nama: {me.first_name} {me.last_name if me.last_name else ''}")
+        print(f"Login sebagai: {me.first_name} {me.last_name if me.last_name else ''} (@{me.username})")
 
-            while True:
-                print("\nMenu:")
-                print("1. Killer Session")
-                print("2. Keluar")
-                choice = input("Pilih opsi (1/2): ")
+        while True:
+            print("\nMenu Telethon:")
+            print("1. Killer Session")
+            print("2. Keluar")
+            choice = input("Pilih opsi (1/2): ")
 
-                if choice == "1":
-                    print("Fungsi Killer Session belum diimplementasikan untuk Telethon.")
-                elif choice == "2":
-                    break
-
-            remove_pid_file()
-    except Exception as e:
-        print(f"Terjadi kesalahan: {e}")
+            if choice == "1":
+                await kill_session_telethon(client)
+            elif choice == "2":
+                break
+            else:
+                print("Pilihan tidak valid.")
+    except SessionPasswordNeededError:
+        print("Autentikasi dua faktor diperlukan.")
 
 async def switch_account():
     accounts = load_accounts()
@@ -113,14 +114,22 @@ async def switch_account():
     
     print("Akun yang tersedia:")
     for idx, account in enumerate(accounts.keys(), start=1):
-        print(f"{idx}. {account}")
+        print(f"{idx}. {account} ({accounts[account]['client_type']})")
 
     choice = input("Pilih akun untuk beralih (masukkan nomor): ")
     try:
         choice = int(choice) - 1
         account_name = list(accounts.keys())[choice]
-        session_string = accounts[account_name]
-        await pyrogram_main(session_string)
+        account_data = accounts[account_name]
+        session_string = account_data["session_string"]
+        client_type = account_data["client_type"]
+
+        if client_type == "pyrogram":
+            await pyrogram_main(session_string)
+        elif client_type == "telethon":
+            api_id = input("Masukkan API ID: ")
+            api_hash = input("Masukkan API Hash: ")
+            await telethon_main(api_id, api_hash, account_name)
     except (ValueError, IndexError):
         print("Pilihan tidak valid.")
 
@@ -128,26 +137,23 @@ async def main():
     check_if_running()
 
     print("Selamat datang di aplikasi Telegram CLI!")
-    print("1. Login Baru")
-    print("2. Login ke Akun Tersimpan")
+    print("1. Login Baru (Pyrogram)")
+    print("2. Login Baru (Telethon)")
+    print("3. Login ke Akun Tersimpan")
     
     while True:
-        choice = input("Pilih opsi (1/2): ")
+        choice = input("Pilih opsi (1/2/3): ")
         if choice == "1":
-            print("\nPilih metode login:")
-            print("1. Login melalui Pyrogram string")
-            print("2. Login melalui Telethon string")
-            method_choice = input("Pilih metode (1/2): ")
-
-            if method_choice == "1":
-                session_string = input("Masukkan string sesi Pyrogram Anda: ")
-                await pyrogram_main(session_string)
-            elif method_choice == "2":
-                session_string = input("Masukkan string sesi Telethon Anda: ")
-                await telethon_main(session_string)
-            else:
-                print("Pilihan tidak valid.")
+            session_string = input("Masukkan string sesi Pyrogram Anda: ")
+            await pyrogram_main(session_string)
+            break
         elif choice == "2":
+            api_id = input("Masukkan API ID: ")
+            api_hash = input("Masukkan API Hash: ")
+            session_name = input("Masukkan nama sesi Telethon: ")
+            await telethon_main(api_id, api_hash, session_name)
+            break
+        elif choice == "3":
             await switch_account()
             break
         else:
