@@ -75,7 +75,7 @@ async def pyrogram_main(session_string):
 
         await menu_loop(app, "pyrogram")
 
-async def telethon_main(session_string):
+async def telethon_main(session_string, api_id, api_hash):
     app = TelegramClient(StringSession(session_string), api_id, api_hash)
 
     async with app:
@@ -136,7 +136,7 @@ async def switch_account():
         if session_info["client_type"] == "pyrogram":
             await pyrogram_main(session_info["session"])
         else:
-            await telethon_main(session_info["session"])
+            await telethon_main(session_info["session"], session_info["api_id"], session_info["api_hash"])
     except (ValueError, IndexError):
         print("Pilihan tidak valid.")
 
@@ -155,8 +155,10 @@ async def main():
             await pyrogram_main(session_string)
             break
         elif choice == "2":
+            api_id = int(input("Masukkan API ID Anda: "))
+            api_hash = input("Masukkan API Hash Anda: ")
             session_string = input("Masukkan string sesi Telegram (Telethon) Anda: ")
-            await telethon_main(session_string)
+            await telethon_main(session_string, api_id, api_hash)
             break
         elif choice == "3":
             await switch_account()
