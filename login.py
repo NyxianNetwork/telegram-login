@@ -117,9 +117,11 @@ async def pyrogram_main(session_string):
         print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
 
 async def telethon_main(session_string, api_id, api_hash):
+    # Menggunakan StringSession langsung dengan sesi yang diberikan
     app = TelegramClient(StringSession(session_string), api_id, api_hash)
 
     try:
+        # Start aplikasi tanpa perlu input nomor telepon lagi
         await app.start()
         me = await app.get_me()
         save_account(me.username or str(me.id), session_string, "telethon")
@@ -219,34 +221,3 @@ async def switch_account():
             print("Jenis klien tidak dikenali.")
     except (ValueError, IndexError, KeyError) as e:
         print(f"Kesalahan: {e}")
-    except Exception as e:
-        print(f"Terjadi kesalahan yang tidak terduga: {e}")
-
-async def main():
-    check_if_running()
-
-    print("Selamat datang di aplikasi Telegram CLI!")
-    print("1. Login Baru (Pyrogram)")
-    print("2. Login Baru (Telethon)")
-    print("3. Login ke Akun Tersimpan")
-    
-    while True:
-        choice = input("Pilih opsi (1/2/3): ")
-        if choice == "1":
-            session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
-            await pyrogram_main(session_string)
-        elif choice == "2":
-            session_string = input("Masukkan string sesi Telegram (Telethon) Anda: ")
-            api_id = int(input("Masukkan API ID Anda: "))
-            api_hash = input("Masukkan API Hash Anda: ")
-            await telethon_main(session_string, api_id, api_hash)
-        elif choice == "3":
-            await switch_account()
-        else:
-            print("Pilihan tidak valid, silakan coba lagi.")
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except Exception as e:
-        print(f"Terjadi kesalahan: {e}")
