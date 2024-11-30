@@ -3,10 +3,8 @@ import asyncio
 import json
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
-from telethon import TelegramClient as TelethonClient
+from telethon import TelegramClient
 from telethon.errors import SessionPasswordNeededError
-from telethon.tl.functions.auth import LogOut
-from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 
 pid_file = "program.pid"
 
@@ -34,26 +32,13 @@ def load_accounts():
             return json.load(f)
     return {}
 
-async def kill_session_pyrogram(client):
-    sessions = (await client.invoke(GetAuthorizations())).authorizations
-    print("\nDaftar sesi aktif:")
-    for idx, session in enumerate(sessions, 1):
-        print(f"{idx}. Perangkat: {session.device_model} | IP: {session.ip} | Negara: {session.country} | Hash: {session.hash}")
-
-    try:
-        choice = int(input("\nPilih sesi yang ingin dihentikan (masukkan nomor): ")) - 1
-        session_to_kill = sessions[choice]
-        await client.invoke(ResetAuthorization(hash=session_to_kill.hash))
-        print("Sesi berhasil dihentikan.")
-    except (IndexError, ValueError):
-        print("Pilihan tidak valid.")
-    except Exception as e:
-        print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
-
 async def kill_session_telethon(client):
-    print("Mengakhiri semua sesi kecuali sesi saat ini...")
-    await client(LogOut())
-    print("Sesi lainnya telah diakhiri.")
+    try:
+        print("Mengakhiri semua sesi kecuali sesi saat ini...")
+        await client(functions.auth.LogOutRequest())
+        print("Sesi lainnya telah diakhiri.")
+    except Exception as e:
+        print(f"Terjadi kesalahan saat mengakhiri sesi: {e}")
 
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
@@ -62,7 +47,6 @@ async def pyrogram_main(session_string):
         async with app:
             me = await app.get_me()
             save_account(me.username or str(me.id), session_string, "pyrogram")
-
             print(f"Login sebagai: {me.first_name} {me.last_name if me.last_name else ''} (@{me.username})")
 
             while True:
@@ -81,7 +65,7 @@ async def pyrogram_main(session_string):
         print("Autentikasi dua faktor diperlukan.")
 
 async def telethon_main(api_id, api_hash, session_name):
-    client = TelethonClient(session_name, api_id, api_hash)
+    client = TelegramClient(session_name, api_id, api_hash)
 
     try:
         await client.start()
