@@ -1,10 +1,10 @@
 import os
 import asyncio
 import json
-from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
+from pyrogram import Client as PyrogramClient
 from pyrogram.errors import SessionPasswordNeeded
 from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
-from telethon import TelegramClient, events
+from telethon import TelegramClient
 from telethon.sessions import StringSession
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
@@ -41,8 +41,7 @@ async def fetch_latest_messages_pyrogram(client, user_id, limit=5):
     return messages
 
 async def fetch_latest_messages_telethon(client, user_id, limit=5):
-    messages = await client.get_messages(user_id, limit=limit)
-    return messages
+    return await client.get_messages(user_id, limit=limit)
 
 async def kill_session_pyrogram(client):
     sessions = (await client.invoke(GetAuthorizations())).authorizations
@@ -65,13 +64,12 @@ async def pyrogram_main(session_string):
 
     async with app:
         me = await app.get_me()
-        phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
         save_account(me.username or str(me.id), session_string, "pyrogram")
 
         print(f"ID: {me.id}")
-        print(f"Nomor: {phone_number}")
+        print(f"Nomor: {me.phone_number if me.phone_number else 'Nomor telepon tidak tersedia'}")
         print(f"Username: @{me.username}")
-        print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
+        print(f"Nama Lengkap: {me.first_name} {me.last_name or ''}")
 
         await menu_loop(app, "pyrogram")
 
@@ -79,21 +77,21 @@ async def telethon_main(session_string, api_id, api_hash):
     app = TelegramClient(StringSession(session_string), api_id, api_hash)
 
     async with app:
+        await app.connect()  # Pastikan client terhubung tanpa meminta input nomor telepon
         me = await app.get_me()
-        phone_number = me.phone if me.phone else "Nomor telepon tidak tersedia"
         save_account(me.username or str(me.id), session_string, "telethon")
 
         print(f"ID: {me.id}")
-        print(f"Nomor: {phone_number}")
+        print(f"Nomor: {me.phone if me.phone else 'Nomor telepon tidak tersedia'}")
         print(f"Username: @{me.username}")
-        print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
+        print(f"Nama Lengkap: {me.first_name} {me.last_name or ''}")
 
         await menu_loop(app, "telethon")
 
 async def menu_loop(client, client_type):
     while True:
         print("\nMenu:")
-        print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
+        print("1. Melihat 5 Pesan Terbaru dari user ID 777000")
         print("2. Beralih Akun")
         print("3. Killer Session")
         print("4. Keluar")
@@ -106,15 +104,19 @@ async def menu_loop(client, client_type):
                 messages = await fetch_latest_messages_telethon(client, 777000)
             for msg in messages:
                 print(f"Pesan ID {msg.id}: {msg.text}")
+
         elif choice == "2":
             await switch_account()
+
         elif choice == "3":
             if client_type == "pyrogram":
                 await kill_session_pyrogram(client)
             else:
                 print("Killer session hanya tersedia di Pyrogram.")
+
         elif choice == "4":
             break
+
         else:
             print("Pilihan tidak valid.")
 
@@ -123,7 +125,7 @@ async def switch_account():
     if not accounts:
         print("Tidak ada akun yang disimpan.")
         return
-    
+
     print("Akun yang tersedia:")
     for idx, account in enumerate(accounts.keys(), start=1):
         print(f"{idx}. {account}")
@@ -136,7 +138,7 @@ async def switch_account():
         if session_info["client_type"] == "pyrogram":
             await pyrogram_main(session_info["session"])
         else:
-            await telethon_main(session_info["session"], session_info["api_id"], session_info["api_hash"])
+            await telethon_main(session_info["session"], session_info.get("api_id"), session_info.get("api_hash"))
     except (ValueError, IndexError):
         print("Pilihan tidak valid.")
 
