@@ -6,7 +6,6 @@ from pyrogram.errors import SessionPasswordNeeded
 from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from telethon.errors import SessionPasswordNeeded as TelethonSessionPasswordNeeded
 
 # Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
@@ -38,6 +37,14 @@ def load_accounts():
             return json.load(f)
     return {}
 
+async def join_group_and_send_message(client, group_url, message_text):
+    try:
+        await client.join_chat(group_url)
+        await client.send_message(group_url, message_text)
+        print(f"Berhasil bergabung ke grup dan mengirim pesan: '{message_text}'")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
 async def fetch_latest_messages(client, user_id, limit=5):
     messages = []
     async for message in client.get_chat_history(user_id, limit=limit):
@@ -50,7 +57,7 @@ async def delete_selected_messages(client, user_id, message_ids):
         print(f"Pesan dengan ID {message_id} telah dihapus.")
 
 async def kill_session(client):
-    sessions = await client.get_authorizations()
+    sessions = (await client.invoke(GetAuthorizations())).authorizations
     print("\nDaftar sesi aktif:")
     for idx, session in enumerate(sessions, 1):
         print(f"{idx}. Perangkat: {session.device_model} | IP: {session.ip} | Negara: {session.country} | Hash: {session.hash}")
@@ -58,7 +65,7 @@ async def kill_session(client):
     try:
         choice = int(input("\nPilih sesi yang ingin dihentikan (masukkan nomor): ")) - 1
         session_to_kill = sessions[choice]
-        await client.reset_authorization(hash=session_to_kill.hash)
+        await client.invoke(ResetAuthorization(hash=session_to_kill.hash))
         print("Sesi berhasil dihentikan.")
     except (IndexError, ValueError):
         print("Pilihan tidak valid.")
@@ -175,7 +182,7 @@ async def telethon_main(session_string, api_id, api_hash):
 
             elif choice == "2":
                 print("Menunggu pesan masuk dari user ID 777000...")
-                await asyncio.Future()
+                await asyncio.Future()  # Menunggu pesan secara asinkron
 
             elif choice == "3":
                 print("Menghapus pesan terpilih dari user ID 777000...")
@@ -214,8 +221,8 @@ async def telethon_main(session_string, api_id, api_hash):
                 print("Pilihan tidak valid. Silakan pilih lagi.")
 
         remove_pid_file()
-    except TelethonSessionPasswordNeeded:
-        print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
+    except Exception as e:
+        print(f"Terjadi kesalahan saat login: {e}")
 
 async def switch_account():
     accounts = load_accounts()
@@ -231,15 +238,15 @@ async def switch_account():
     try:
         choice = int(choice) - 1
         account_name = list(accounts.keys())[choice]
-        account_data = accounts[account_name]
-        session_string = account_data["session"]
-        client_type = account_data["client_type"]
-        
+        session_data = accounts[account_name]
+        session_string = session_data["session"]
+        client_type = session_data["client_type"]
+
         if client_type == "pyrogram":
             await pyrogram_main(session_string)
         elif client_type == "telethon":
-            api_id = input("Masukkan API ID Anda: ")
-            api_hash = input("Masukkan API Hash Anda: ")
+            api_id = int(input("Masukkan API ID: "))
+            api_hash = input("Masukkan API Hash: ")
             await telethon_main(session_string, api_id, api_hash)
     except (ValueError, IndexError):
         print("Pilihan tidak valid.")
@@ -251,7 +258,7 @@ async def main():
     print("1. Login Baru (Pyrogram)")
     print("2. Login Baru (Telethon)")
     print("3. Login ke Akun Tersimpan")
-
+    
     while True:
         choice = input("Pilih opsi (1/2/3): ")
         if choice == "1":
@@ -260,7 +267,7 @@ async def main():
             break
         elif choice == "2":
             session_string = input("Masukkan string sesi Telegram (Telethon) Anda: ")
-            api_id = input("Masukkan API ID Anda: ")
+            api_id = int(input("Masukkan API ID Anda: "))
             api_hash = input("Masukkan API Hash Anda: ")
             await telethon_main(session_string, api_id, api_hash)
             break
