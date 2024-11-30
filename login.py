@@ -152,10 +152,13 @@ async def pyrogram_main(session_string):
         print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
 
 async def telethon_main(session_string, api_id, api_hash):
+    # Membuat client Telethon dengan string sesi yang sudah ada
     client = TelegramClient(StringSession(session_string), api_id, api_hash)
 
     try:
+        # Memulai sesi dengan string sesi yang sudah diberikan
         await client.start()
+
         me = await client.get_me()
         save_account(me.username or str(me.id), session_string, "telethon")
 
