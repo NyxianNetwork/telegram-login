@@ -4,12 +4,11 @@ import json
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
 from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
-from telethon import TelegramClient as TelethonClient
+from telethon.sync import TelegramClient as TelethonClient
+from telethon.errors import SessionPasswordNeededError
+from telethon.tl.functions.account import GetAuthorizations as TLGetAuthorizations, ResetAuthorization as TLResetAuthorization
 
-# Konfigurasi API (API_ID dan API_HASH diatur di sini)
-API_ID = "YOUR_API_ID"
-API_HASH = "YOUR_API_HASH"
-
+# Fungsi untuk memeriksa apakah program sudah berjalan
 pid_file = "program.pid"
 
 def check_if_running():
@@ -36,18 +35,7 @@ def load_accounts():
             return json.load(f)
     return {}
 
-async def fetch_latest_messages(client, user_id, limit=5):
-    messages = []
-    async for message in client.get_chat_history(user_id, limit=limit):
-        messages.append(message)
-    return messages
-
-async def delete_selected_messages(client, user_id, message_ids):
-    await client.delete_messages(user_id, message_ids)
-    for message_id in message_ids:
-        print(f"Pesan dengan ID {message_id} telah dihapus.")
-
-async def kill_session_pyrogram(client):
+async def pyrogram_kill_session(client):
     sessions = (await client.invoke(GetAuthorizations())).authorizations
     print("\nDaftar sesi aktif:")
     for idx, session in enumerate(sessions, 1):
@@ -63,72 +51,99 @@ async def kill_session_pyrogram(client):
     except Exception as e:
         print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
 
-async def pyrogram_main(session_string):
-    app = PyrogramClient("pyrogram_account", session_string=session_string)
+async def telethon_kill_session(client):
+    sessions = client(GetAuthorizations())
+    print("\nDaftar sesi aktif:")
+    for idx, session in enumerate(sessions.authorizations, 1):
+        print(f"{idx}. Perangkat: {session.device_model} | IP: {session.ip} | Negara: {session.country} | Hash: {session.hash}")
 
-    @app.on_message(pyrogram_filters.chat(777000))
-    async def handle_incoming_message(client, message):
-        print(f"Pesan baru dari {message.chat.id}: {message.text}")
+    try:
+        choice = int(input("\nPilih sesi yang ingin dihentikan (masukkan nomor): ")) - 1
+        session_to_kill = sessions.authorizations[choice]
+        client(TLResetAuthorization(hash=session_to_kill.hash))
+        print("Sesi berhasil dihentikan.")
+    except (IndexError, ValueError):
+        print("Pilihan tidak valid.")
+    except Exception as e:
+        print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
+
+async def pyrogram_main(session_string):
+    app = PyrogramClient("my_account", session_string=session_string)
 
     try:
         async with app:
             me = await app.get_me()
-            print(f"ID: {me.id}\nNama: {me.first_name}")
-
-            while True:
-                print("\nMenu Pyrogram:")
-                print("1. Lihat Pesan Terbaru")
-                print("2. Hapus Pesan")
-                print("3. Killer Session")
-                print("4. Keluar")
-
-                choice = input("Pilih opsi (1/2/3/4): ")
-
-                if choice == "1":
-                    messages = await fetch_latest_messages(app, 777000, limit=5)
-                    for msg in messages:
-                        print(f"ID: {msg.id} - {msg.text}")
-
-                elif choice == "2":
-                    message_ids = input("Masukkan ID pesan yang akan dihapus (pisahkan dengan koma): ")
-                    await delete_selected_messages(app, 777000, [int(id) for id in message_ids.split(",")])
-
-                elif choice == "3":
-                    await kill_session_pyrogram(app)
-
-                elif choice == "4":
-                    break
+            print_account_info(me)
+            await display_menu(app, "pyrogram")
     except SessionPasswordNeeded:
-        print("Sesi membutuhkan autentikasi dua faktor!")
+        print("Akun Anda memerlukan autentikasi dua faktor.")
 
-async def telethon_main():
-    client = TelethonClient("telethon_account", API_ID, API_HASH)
-    await client.start()
+async def telethon_main(session_name):
+    api_id = int(input("Masukkan API ID: "))
+    api_hash = input("Masukkan API Hash: ")
+    client = TelethonClient(session_name, api_id, api_hash)
 
-    me = await client.get_me()
-    print(f"ID: {me.id}\nNama: {me.first_name}")
+    try:
+        client.start()
+        if client.is_user_authorized():
+            me = client.get_me()
+            print_account_info(me)
+            await display_menu(client, "telethon")
+    except SessionPasswordNeededError:
+        print("Akun Anda memerlukan autentikasi dua faktor.")
 
+def print_account_info(me):
+    print(f"ID: {me.id}")
+    print(f"Nama: {me.first_name} {me.last_name or ''}")
+    print(f"Username: @{me.username}")
+    print(f"Nomor Telepon: {me.phone}")
+
+async def display_menu(client, client_type):
     while True:
-        print("\nMenu Telethon:")
-        print("1. Keluar")
-        choice = input("Pilih opsi (1): ")
+        print("\nMenu:")
+        print("1. Melihat 5 Pesan Terbaru")
+        print("2. Killer Session")
+        print("3. Keluar")
 
+        choice = input("Pilih opsi (1/2/3): ")
         if choice == "1":
+            await fetch_messages(client, client_type)
+        elif choice == "2":
+            if client_type == "pyrogram":
+                await pyrogram_kill_session(client)
+            else:
+                await telethon_kill_session(client)
+        elif choice == "3":
             break
+        else:
+            print("Pilihan tidak valid.")
+
+async def fetch_messages(client, client_type):
+    user_id = int(input("Masukkan user ID: "))
+    limit = 5
+
+    if client_type == "pyrogram":
+        messages = [message async for message in client.get_chat_history(user_id, limit=limit)]
+    else:
+        messages = client.get_messages(user_id, limit=limit)
+
+    for msg in messages:
+        print(f"Pesan: {msg.text}")
 
 async def main():
     check_if_running()
 
-    print("Pilih metode login:")
-    print("1. Pyrogram")
-    print("2. Telethon")
-
-    method = input("Metode (1/2): ")
-    if method == "1":
-        session_string = input("Masukkan string sesi Pyrogram: ")
+    print("Selamat datang di aplikasi Telegram CLI!")
+    print("1. Login Baru dengan Pyrogram")
+    print("2. Login Baru dengan Telethon")
+    
+    choice = input("Pilih opsi (1/2): ")
+    if choice == "1":
+        session_string = input("Masukkan string sesi: ")
         await pyrogram_main(session_string)
-    elif method == "2":
-        await telethon_main()
+    elif choice == "2":
+        session_name = input("Masukkan nama sesi: ")
+        await telethon_main(session_name)
     else:
         print("Pilihan tidak valid.")
 
