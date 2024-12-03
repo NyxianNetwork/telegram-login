@@ -98,7 +98,7 @@ async def pyrogram_main(session_string):
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
-                    messages = await fetch_latest_messages(app, 777000, limit=5)
+                    messages = await fetch_latest_messages(app, 777000, limit=20)
                     for message in messages:
                         print(f"Pesan ID {message.id} dari {message.chat.id}: {message.text}")
 
