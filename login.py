@@ -87,7 +87,7 @@ async def pyrogram_main(session_string):
 
             while True:
                 print("\nMenu:")
-                print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
+                print("1. Melihat 20 Pesan Terbaru Dari user id 777000")
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
                 print("3. Hapus Pesan Terpilih Dari user id 777000")
                 print("4. Update Repo")
