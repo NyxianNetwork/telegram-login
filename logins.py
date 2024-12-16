@@ -22,9 +22,9 @@ def remove_pid_file():
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-def save_account(account_name, session_string):
+def save_account(account_name, session_string, api_id, api_hash):
     accounts = load_accounts()
-    accounts[account_name] = session_string
+    accounts[account_name] = {"session_string": session_string, "api_id": api_id, "api_hash": api_hash}
     with open("accounts.json", "w") as f:
         json.dump(accounts, f)
 
@@ -34,58 +34,14 @@ def load_accounts():
             return json.load(f)
     return {}
 
-async def join_group_and_send_message(client, group_url, message_text):
-    try:
-        entity = await client.get_entity(group_url)
-        await client(JoinChannelRequest(entity))
-        await client.send_message(entity, message_text)
-        print(f"Berhasil bergabung ke grup dan mengirim pesan: '{message_text}'")
-    except Exception as e:
-        print(f"Terjadi kesalahan: {e}")
-
-async def fetch_latest_messages(client, user_id, limit=5):
-    try:
-        messages = await client(GetHistoryRequest(
-            peer=user_id,
-            offset_id=0,
-            offset_date=None,
-            add_offset=0,
-            limit=limit,
-            max_id=0,
-            min_id=0,
-            hash=0
-        ))
-        return messages.messages
-    except Exception as e:
-        print(f"Terjadi kesalahan: {e}")
-        return []
-
-async def delete_selected_messages(client, user_id, message_ids):
-    try:
-        await client(DeleteMessagesRequest(
-            id=message_ids,
-            revoke=True
-        ))
-        for message_id in message_ids:
-            print(f"Pesan dengan ID {message_id} telah dihapus.")
-    except Exception as e:
-        print(f"Terjadi kesalahan saat menghapus pesan: {e}")
-
-async def kill_session(client):
-    try:
-        await client(LogOutRequest())
-        print("Semua sesi telah dihentikan.")
-    except Exception as e:
-        print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
-
-async def telethon_main(session_string):
-    client = TelegramClient(StringSession(session_string), api_id=123456, api_hash="your_api_hash")
+async def telethon_main(session_string, api_id, api_hash):
+    client = TelegramClient(StringSession(session_string), api_id, api_hash)
 
     try:
         await client.start()
         me = await client.get_me()
 
-        save_account(me.username or str(me.id), session_string)
+        save_account(me.username or str(me.id), session_string, api_id, api_hash)
         print(f"ID: {me.id}")
         print(f"Username: @{me.username}")
         print(f"Nama: {me.first_name} {me.last_name or ''}")
@@ -156,6 +112,41 @@ async def telethon_main(session_string):
     finally:
         await client.disconnect()
 
+async def fetch_latest_messages(client, user_id, limit=5):
+    try:
+        messages = await client(GetHistoryRequest(
+            peer=user_id,
+            offset_id=0,
+            offset_date=None,
+            add_offset=0,
+            limit=limit,
+            max_id=0,
+            min_id=0,
+            hash=0
+        ))
+        return messages.messages
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+        return []
+
+async def delete_selected_messages(client, user_id, message_ids):
+    try:
+        await client(DeleteMessagesRequest(
+            id=message_ids,
+            revoke=True
+        ))
+        for message_id in message_ids:
+            print(f"Pesan dengan ID {message_id} telah dihapus.")
+    except Exception as e:
+        print(f"Terjadi kesalahan saat menghapus pesan: {e}")
+
+async def kill_session(client):
+    try:
+        await client(LogOutRequest())
+        print("Semua sesi telah dihentikan.")
+    except Exception as e:
+        print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
+
 async def switch_account():
     accounts = load_accounts()
     if not accounts:
@@ -170,8 +161,8 @@ async def switch_account():
     try:
         choice = int(choice) - 1
         account_name = list(accounts.keys())[choice]
-        session_string = accounts[account_name]
-        await telethon_main(session_string)
+        account = accounts[account_name]
+        await telethon_main(account["session_string"], account["api_id"], account["api_hash"])
     except (ValueError, IndexError):
         print("Pilihan tidak valid.")
 
@@ -185,8 +176,10 @@ async def main():
     while True:
         choice = input("Pilih opsi (1/2): ")
         if choice == "1":
+            api_id = int(input("Masukkan API ID Anda: "))
+            api_hash = input("Masukkan API Hash Anda: ")
             session_string = input("Masukkan string sesi Telethon Anda: ")
-            await telethon_main(session_string)
+            await telethon_main(session_string, api_id, api_hash)
             break
         elif choice == "2":
             await switch_account()
