@@ -3,7 +3,7 @@ import asyncio
 import json
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from telethon.errors import SessionPasswordNeededError
+from telethon.errors import SessionPasswordNeededError, BadRequestError
 
 # File untuk menyimpan akun
 accounts_file = "accounts.json"
@@ -24,29 +24,28 @@ def load_accounts():
 
 # Fungsi utama untuk menjalankan Telethon
 async def telethon_main(api_id, api_hash, session_string):
-    # Menggunakan StringSession untuk langsung login tanpa meminta nomor telepon
+    print("\nMencoba login menggunakan StringSession...")
     client = TelegramClient(StringSession(session_string), api_id, api_hash)
 
     try:
-        # Memulai sesi dengan data StringSession
         async with client:
             me = await client.get_me()
+            print(f"Berhasil login sebagai: {me.first_name} {me.last_name or ''} (@{me.username})")
+            print(f"ID: {me.id}")
 
             # Menyimpan data akun
             save_account(me.username or str(me.id), session_string, api_id, api_hash)
-
-            print(f"Berhasil login sebagai: {me.first_name} {me.last_name or ''} (@{me.username})")
-            print(f"ID: {me.id}")
 
             # Contoh: Menampilkan dialog yang tersedia
             print("\nDaftar chat yang tersedia:")
             async for dialog in client.iter_dialogs():
                 print(f"- {dialog.name} ({dialog.id})")
-
     except SessionPasswordNeededError:
-        print("Akun memerlukan autentikasi dua faktor. Silakan login secara manual.")
+        print("Sesi tidak valid atau memerlukan autentikasi dua faktor. Harap login ulang.")
+    except BadRequestError as e:
+        print(f"Kesalahan saat mencoba login: {e}")
     except Exception as e:
-        print(f"Kesalahan: {e}")
+        print(f"Kesalahan tidak terduga: {e}")
 
 # Fungsi untuk login baru atau akun tersimpan
 async def main():
