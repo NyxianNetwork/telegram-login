@@ -3,7 +3,6 @@ import asyncio
 import json
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
-from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 
 pid_file = "program.pid"
 ACCOUNT_FILE = "accounts.json"
@@ -31,13 +30,6 @@ def load_accounts():
                 return {}
     return {}
 
-def save_account(account_data):
-    """Menyimpan data akun ke dalam file JSON."""
-    accounts = load_accounts()
-    accounts[account_data["username"] or str(account_data["id"])] = account_data
-    with open(ACCOUNT_FILE, "w") as f:
-        json.dump(accounts, f, indent=4)
-
 async def pyrogram_main(session_string):
     """Mengelola sesi Pyrogram dan menampilkan informasi akun setelah login."""
     app = PyrogramClient("my_account", session_string=session_string)
@@ -47,23 +39,16 @@ async def pyrogram_main(session_string):
             me = await app.get_me()
 
             # Ambil informasi akun
-            account_info = {
-                "id": me.id,
-                "phone_number": me.phone_number if me.phone_number else "Tidak tersedia",
-                "username": me.username if me.username else "Tidak ada username",
-                "name": f"{me.first_name} {me.last_name if me.last_name else ''}".strip(),
-                "session_string": session_string
-            }
-
-            # Simpan ke dalam file akun
-            save_account(account_info)
+            phone_number = me.phone_number if me.phone_number else "Tidak tersedia"
+            username = me.username if me.username else "Tidak ada username"
+            full_name = f"{me.first_name} {me.last_name if me.last_name else ''}".strip()
 
             # Tampilkan informasi akun di terminal
-            print("\n===== INFORMASI AKUN =====")
-            print(f"ID: {account_info['id']}")
-            print(f"Nomor Telepon: {account_info['phone_number']}")
-            print(f"Username: @{account_info['username']}")
-            print(f"Nama: {account_info['name']}")
+            print("\n===== BERHASIL LOGIN =====")
+            print(f"ID: {me.id}")
+            print(f"Nomor Telepon: {phone_number}")
+            print(f"Username: @{username}")
+            print(f"Nama: {full_name}")
             print("==========================\n")
 
     except SessionPasswordNeeded:
@@ -78,26 +63,18 @@ async def switch_account():
         return
 
     print("\nAkun yang tersedia:")
-    for idx, (username, data) in enumerate(accounts.items(), start=1):
-        if isinstance(data, dict) and "session_string" in data:
-            print(f"{idx}. {data.get('name', 'Tanpa Nama')} ({data.get('phone_number', 'Tidak tersedia')}) - @{data.get('username', 'Tidak ada username')}")
-        else:
-            print(f"{idx}. Format akun tidak valid, harap periksa accounts.json.")
+    for idx, username in enumerate(accounts.keys(), start=1):
+        print(f"{idx}. {username}")
 
     choice = input("Pilih akun untuk beralih (masukkan nomor, atau ketik 'batal' untuk kembali): ")
     if choice.lower() == "batal":
         return
 
     try:
-        account_data = list(accounts.values())[int(choice) - 1]
-        print(f"\n===== BERPINDAH KE AKUN =====")
-        print(f"ID: {account_data['id']}")
-        print(f"Nomor Telepon: {account_data['phone_number']}")
-        print(f"Username: @{account_data['username']}")
-        print(f"Nama: {account_data['name']}")
-        print("=============================\n")
-        
-        await pyrogram_main(account_data["session_string"])
+        session_string = list(accounts.values())[int(choice) - 1]
+
+        print("\nBeralih ke akun...")
+        await pyrogram_main(session_string)
     except (ValueError, IndexError):
         print("Pilihan tidak valid.")
 
