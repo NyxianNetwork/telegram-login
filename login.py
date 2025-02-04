@@ -5,10 +5,12 @@ from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded, RPCError
 from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 
-# Fungsi untuk memastikan program tidak berjalan dua kali
-pid_file = "program.pid"
+# File untuk menyimpan sesi akun
+ACCOUNT_FILE = "accounts.json"
 
 def check_if_running():
+    """Memeriksa apakah program sudah berjalan sebelumnya."""
+    pid_file = "program.pid"
     if os.path.isfile(pid_file):
         print("Program sudah berjalan sebelumnya!")
         exit()
@@ -17,180 +19,110 @@ def check_if_running():
             f.write(str(os.getpid()))
 
 def remove_pid_file():
+    """Menghapus file PID saat program selesai."""
+    pid_file = "program.pid"
     if os.path.isfile(pid_file):
         os.remove(pid_file)
 
-def save_account(account_name, session_string):
-    accounts = load_accounts()
-    accounts[account_name] = session_string
-    with open("accounts.json", "w") as f:
-        json.dump(accounts, f)
-
 def load_accounts():
-    if os.path.isfile("accounts.json"):
-        with open("accounts.json", "r") as f:
+    """Memuat daftar akun dari file JSON."""
+    if os.path.isfile(ACCOUNT_FILE):
+        with open(ACCOUNT_FILE, "r") as f:
             return json.load(f)
     return {}
 
-async def join_group_and_send_message(client, group_url, message_text):
-    try:
-        await client.join_chat(group_url)
-        await client.send_message(group_url, message_text)
-        print(f"Berhasil bergabung ke grup dan mengirim pesan: '{message_text}'")
-    except RPCError as e:
-        print(f"Terjadi kesalahan: {e}")
-
-async def fetch_latest_messages(client, user_id, limit=5):
-    try:
-        messages = []
-        async for message in client.get_chat_history(user_id, limit=limit):
-            messages.append(message)
-        if not messages:
-            print("Tidak ada pesan yang ditemukan.")
-        return messages
-    except RPCError as e:
-        print(f"Gagal mengambil pesan: {e}")
-        return []
-
-async def delete_selected_messages(client, user_id, message_ids):
-    try:
-        await client.delete_messages(user_id, message_ids)
-        print(f"Pesan dengan ID {message_ids} telah dihapus.")
-    except RPCError as e:
-        print(f"Gagal menghapus pesan: {e}")
-
-async def kill_session(client):
-    try:
-        sessions = (await client.invoke(GetAuthorizations())).authorizations
-        print("\nDaftar sesi aktif:")
-        for idx, session in enumerate(sessions, 1):
-            print(f"{idx}. Perangkat: {session.device_model} | IP: {session.ip} | Negara: {session.country} | Hash: {session.hash}")
-
-        choice = input("\nPilih sesi yang ingin dihentikan (masukkan nomor, atau ketik 'batal' untuk kembali): ")
-        if choice.lower() == "batal":
-            return
-
-        session_to_kill = sessions[int(choice) - 1]
-        await client.invoke(ResetAuthorization(hash=session_to_kill.hash))
-        print("Sesi berhasil dihentikan.")
-    except (IndexError, ValueError):
-        print("Pilihan tidak valid.")
-    except RPCError as e:
-        print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
-
-def clear_screen():
-    os.system("cls" if os.name == "nt" else "clear")
+def save_account(account_data):
+    """Menyimpan data akun ke dalam file JSON."""
+    accounts = load_accounts()
+    accounts[account_data["username"] or str(account_data["id"])] = account_data
+    with open(ACCOUNT_FILE, "w") as f:
+        json.dump(accounts, f, indent=4)
 
 async def pyrogram_main(session_string):
+    """Mengelola sesi Pyrogram dan menampilkan informasi akun setelah login."""
     app = PyrogramClient("my_account", session_string=session_string)
-
-    @app.on_message(pyrogram_filters.chat(777000))
-    async def handle_incoming_message(client, message):
-        print(f"Pesan baru dari {message.chat.id}: {message.text}")
-
     try:
         async with app:
             me = await app.get_me()
-            phone_number = me.phone_number if me.phone_number else "Nomor telepon tidak tersedia"
-            save_account(me.username or str(me.id), session_string)
 
-            print(f"ID: {me.id}")
-            print(f"Nomor: {phone_number}")
-            print(f"Username: @{me.username}")
-            print(f"Nama Lengkap: {me.first_name} {me.last_name if me.last_name else ''}")
+            # Ambil informasi akun
+            account_info = {
+                "id": me.id,
+                "phone_number": me.phone_number if me.phone_number else "Tidak tersedia",
+                "username": me.username if me.username else "Tidak ada username",
+                "name": f"{me.first_name} {me.last_name if me.last_name else ''}".strip(),
+                "session_string": session_string
+            }
 
+            # Simpan ke dalam file akun
+            save_account(account_info)
+
+            # Tampilkan informasi akun di terminal
+            print("\n===== INFORMASI AKUN =====")
+            print(f"ID: {account_info['id']}")
+            print(f"Nomor Telepon: {account_info['phone_number']}")
+            print(f"Username: @{account_info['username']}")
+            print(f"Nama: {account_info['name']}")
+            print("==========================\n")
+
+            # Biarkan sesi tetap berjalan untuk menangani perintah
             while True:
-                clear_screen()
                 print("\nMenu:")
                 print("1. Melihat 20 Pesan Terbaru Dari user id 777000")
                 print("2. Menunggu Pesan Masuk Dari user id 777000")
-                print("3. Hapus Pesan Terpilih Dari user id 777000")
-                print("4. Update Repo")
-                print("5. Beralih Akun")
-                print("6. Killer Session")
-                print("7. Keluar")
-                choice = input("Pilih opsi (1/2/3/4/5/6/7): ")
+                print("3. Keluar")
+                choice = input("Pilih opsi (1/2/3): ")
 
                 if choice == "1":
                     print("Menampilkan 20 pesan terbaru dari user ID 777000...")
-                    messages = await fetch_latest_messages(app, 777000, limit=20)
-                    for message in messages:
-                        print(f"Pesan ID {message.id}: {message.text}")
+                    messages = []
+                    async for message in app.get_chat_history(777000, limit=20):
+                        messages.append(message)
+                    for msg in messages:
+                        print(f"Pesan ID {msg.id}: {msg.text}")
 
                 elif choice == "2":
                     print("Menunggu pesan masuk dari user ID 777000...")
-                    await asyncio.Future()
+                    await asyncio.Future()  # Menunggu pesan secara asinkron
 
                 elif choice == "3":
-                    print("Menghapus pesan terpilih dari user ID 777000...")
-                    messages = await fetch_latest_messages(app, 777000, limit=5)
-
-                    if not messages:
-                        print("Tidak ada pesan untuk dihapus.")
-                        continue
-
-                    message_ids_to_delete = []
-                    for message in messages:
-                        print(f"Pesan ID {message.id}: {message.text}")
-
-                    while True:
-                        delete_choice = input("Pilih ID pesan untuk dihapus (pisahkan dengan koma, atau ketik 'done' untuk selesai): ")
-                        if delete_choice.lower() == "done":
-                            break
-                        try:
-                            selected_ids = [int(num) for num in delete_choice.split(",")]
-                            message_ids_to_delete.extend(selected_ids)
-                        except ValueError:
-                            print("Masukkan angka yang valid.")
-                    
-                    if message_ids_to_delete:
-                        await delete_selected_messages(app, 777000, message_ids_to_delete)
-
-                elif choice == "4":
-                    print("Melakukan update repo...")
-                    os.system("git pull")
-                    print("Repo berhasil diperbarui.")
-
-                elif choice == "5":
-                    await switch_account()
-
-                elif choice == "6":
-                    await kill_session(app)
-
-                elif choice == "7":
                     break
                 else:
                     print("Pilihan tidak valid.")
 
             remove_pid_file()
+
     except SessionPasswordNeeded:
-        print("Akun memerlukan autentikasi dua faktor. Silakan login manual untuk mendapatkan string sesi baru.")
+        print("Akun membutuhkan autentikasi dua faktor. Silakan login manual untuk mendapatkan string sesi baru.")
     except RPCError as e:
         print(f"Terjadi kesalahan: {e}")
 
 async def switch_account():
+    """Memungkinkan pengguna beralih ke akun lain."""
     accounts = load_accounts()
     if not accounts:
-        print("Tidak ada akun yang disimpan.")
+        print("Tidak ada akun yang tersimpan.")
         return
-    
-    print("Akun yang tersedia:")
-    for idx, account in enumerate(accounts.keys(), start=1):
-        print(f"{idx}. {account}")
+
+    print("\nAkun yang tersedia:")
+    for idx, account in enumerate(accounts.values(), start=1):
+        print(f"{idx}. {account['name']} ({account['phone_number']}) - @{account['username']}")
 
     choice = input("Pilih akun untuk beralih (masukkan nomor, atau ketik 'batal' untuk kembali): ")
     if choice.lower() == "batal":
         return
 
     try:
-        account_name = list(accounts.keys())[int(choice) - 1]
-        session_string = accounts[account_name]
-        await pyrogram_main(session_string)
+        account_data = list(accounts.values())[int(choice) - 1]
+        print(f"Berpindah ke akun: {account_data['name']} (@{account_data['username']})")
+        await pyrogram_main(account_data["session_string"])
     except (ValueError, IndexError):
         print("Pilihan tidak valid.")
 
 async def main():
+    """Menjalankan menu utama login."""
     check_if_running()
+    
     print("Selamat datang di aplikasi Telegram CLI!")
     print("1. Login Baru")
     print("2. Login ke Akun Tersimpan")
