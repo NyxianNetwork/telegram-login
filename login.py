@@ -3,6 +3,7 @@ import asyncio
 import json
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
+from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 
 pid_file = "program.pid"
 ACCOUNT_FILE = "accounts.json"
@@ -20,15 +21,44 @@ def remove_pid_file():
         os.remove(pid_file)
 
 def load_accounts():
-    """Memuat daftar akun dari file JSON."""
     if os.path.isfile(ACCOUNT_FILE):
         with open(ACCOUNT_FILE, "r") as f:
             try:
                 return json.load(f)
             except json.JSONDecodeError:
-                print("Terjadi kesalahan dalam membaca accounts.json. Format tidak valid.")
+                print("Terjadi kesalahan dalam membaca accounts.json.")
                 return {}
     return {}
+
+async def fetch_latest_messages(client, user_id, limit=5):
+    """Mengambil 5 pesan terbaru dari user ID tertentu."""
+    messages = []
+    async for message in client.get_chat_history(user_id, limit=limit):
+        messages.append(message)
+    return messages
+
+async def delete_selected_messages(client, user_id, message_ids):
+    """Menghapus pesan tertentu berdasarkan ID."""
+    await client.delete_messages(user_id, message_ids)
+    for message_id in message_ids:
+        print(f"Pesan dengan ID {message_id} telah dihapus.")
+
+async def kill_session(client):
+    """Menampilkan sesi aktif dan menghentikan sesi tertentu."""
+    sessions = (await client.invoke(GetAuthorizations())).authorizations
+    print("\nDaftar sesi aktif:")
+    for idx, session in enumerate(sessions, 1):
+        print(f"{idx}. Perangkat: {session.device_model} | IP: {session.ip} | Negara: {session.country} | Hash: {session.hash}")
+
+    try:
+        choice = int(input("\nPilih sesi yang ingin dihentikan (masukkan nomor): ")) - 1
+        session_to_kill = sessions[choice]
+        await client.invoke(ResetAuthorization(hash=session_to_kill.hash))
+        print("Sesi berhasil dihentikan.")
+    except (IndexError, ValueError):
+        print("Pilihan tidak valid.")
+    except Exception as e:
+        print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
 
 async def pyrogram_main(session_string):
     """Mengelola sesi Pyrogram dan menampilkan informasi akun setelah login."""
@@ -37,13 +67,10 @@ async def pyrogram_main(session_string):
     try:
         async with app:
             me = await app.get_me()
-
-            # Ambil informasi akun
             phone_number = me.phone_number if me.phone_number else "Tidak tersedia"
             username = me.username if me.username else "Tidak ada username"
             full_name = f"{me.first_name} {me.last_name if me.last_name else ''}".strip()
 
-            # Tampilkan informasi akun di terminal
             print("\n===== BERHASIL LOGIN =====")
             print(f"ID: {me.id}")
             print(f"Nomor Telepon: {phone_number}")
@@ -51,8 +78,70 @@ async def pyrogram_main(session_string):
             print(f"Nama: {full_name}")
             print("==========================\n")
 
+            while True:
+                print("\nMenu:")
+                print("1. Melihat 5 Pesan Terbaru Dari user id 777000")
+                print("2. Menunggu Pesan Masuk Dari user id 777000")
+                print("3. Hapus Pesan Terpilih Dari user id 777000")
+                print("4. Update Repo")
+                print("5. Beralih Akun")
+                print("6. Killer Session")
+                print("7. Keluar")
+                choice = input("Pilih opsi (1/2/3/4/5/6/7): ")
+
+                if choice == "1":
+                    print("Menampilkan 5 pesan terbaru dari user ID 777000...")
+                    messages = await fetch_latest_messages(app, 777000, limit=5)
+                    for message in messages:
+                        print(f"Pesan ID {message.id}: {message.text}")
+
+                elif choice == "2":
+                    print("Menunggu pesan masuk dari user ID 777000...")
+                    @app.on_message(pyrogram_filters.chat(777000))
+                    async def handle_incoming_message(client, message):
+                        print(f"Pesan baru dari {message.chat.id}: {message.text}")
+                    await asyncio.Future()  # Menunggu pesan secara asinkron
+
+                elif choice == "3":
+                    print("Menghapus pesan terpilih dari user ID 777000...")
+                    messages = await fetch_latest_messages(app, 777000, limit=5)
+                    message_ids_to_delete = []
+                    
+                    for message in messages:
+                        print(f"Pesan ID {message.id}: {message.text}")
+                    
+                    while True:
+                        try:
+                            delete_choice = input("Pilih ID pesan untuk dihapus (pisahkan dengan koma untuk beberapa pesan, atau ketik 'done' untuk selesai): ")
+                            if delete_choice.lower() == 'done':
+                                break
+                            selected_ids = [int(num) for num in delete_choice.split(",")]
+                            message_ids_to_delete = selected_ids
+                            await delete_selected_messages(app, 777000, message_ids_to_delete)
+                        except (ValueError, IndexError):
+                            print("Pilihan tidak valid, silakan coba lagi.")
+
+                elif choice == "4":
+                    print("Melakukan update repo...")
+                    os.system("git pull")
+                    print("Repo berhasil diperbarui.")
+
+                elif choice == "5":
+                    print("Beralih akun...")
+                    await switch_account()
+
+                elif choice == "6":
+                    await kill_session(app)
+
+                elif choice == "7":
+                    break
+                else:
+                    print("Pilihan tidak valid. Silakan pilih lagi.")
+
+            remove_pid_file()
+
     except SessionPasswordNeeded:
-        print("Akun membutuhkan autentikasi dua faktor. Silakan login manual untuk mendapatkan string sesi baru.")
+        print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
 
 async def switch_account():
     """Memungkinkan pengguna beralih ke akun lain."""
