@@ -155,15 +155,42 @@ async def pyrogram_main(session_string):
         print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
 
 async def switch_account():
-    """Memungkinkan pengguna beralih ke akun lain."""
+    """Memungkinkan pengguna beralih ke akun lain setelah memverifikasi statusnya."""
     accounts = load_accounts()
     
     if not isinstance(accounts, dict) or not accounts:
         print("Tidak ada akun yang tersimpan atau format file accounts.json rusak.")
         return
 
+    valid_accounts = {}  # Menyimpan akun yang masih bisa diakses
+
+    print("\nMemeriksa status akun tersimpan...")
+    for username, session_string in accounts.items():
+        print(f"Mengecek akun {username}...")
+        temp_client = PyrogramClient("temp_session", session_string=session_string)
+
+        try:
+            async with temp_client:
+                me = await temp_client.get_me()
+                if me:
+                    valid_accounts[username] = session_string
+                    print(f"✅ Akun {username} masih aktif.")
+        except Exception:
+            print(f"❌ Akun {username} tidak valid atau telah dihapus.")
+    
+    # Jika ada akun yang tidak valid, perbarui accounts.json
+    if len(valid_accounts) != len(accounts):
+        print("\nMenghapus akun yang tidak valid dari daftar...")
+        with open(ACCOUNT_FILE, "w") as f:
+            json.dump(valid_accounts, f, indent=4)
+
+    # Gunakan daftar akun yang sudah diverifikasi
+    if not valid_accounts:
+        print("Tidak ada akun yang tersedia setelah verifikasi.")
+        return
+
     print("\nAkun yang tersedia:")
-    for idx, username in enumerate(accounts.keys(), start=1):
+    for idx, username in enumerate(valid_accounts.keys(), start=1):
         print(f"{idx}. {username}")
 
     choice = input("Pilih akun untuk beralih (masukkan nomor, atau ketik 'batal' untuk kembali): ")
@@ -171,7 +198,7 @@ async def switch_account():
         return
 
     try:
-        session_string = list(accounts.values())[int(choice) - 1]
+        session_string = list(valid_accounts.values())[int(choice) - 1]
 
         print("\nBeralih ke akun...")
         await pyrogram_main(session_string)
