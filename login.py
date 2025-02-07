@@ -21,6 +21,7 @@ def remove_pid_file():
         os.remove(pid_file)
 
 def load_accounts():
+    """Memuat daftar akun dari file JSON."""
     if os.path.isfile(ACCOUNT_FILE):
         with open(ACCOUNT_FILE, "r") as f:
             try:
@@ -29,6 +30,13 @@ def load_accounts():
                 print("Terjadi kesalahan dalam membaca accounts.json.")
                 return {}
     return {}
+
+def save_account(username, session_string):
+    """Menyimpan akun yang login ke accounts.json."""
+    accounts = load_accounts()
+    accounts[username] = session_string
+    with open(ACCOUNT_FILE, "w") as f:
+        json.dump(accounts, f, indent=4)
 
 async def fetch_latest_messages(client, user_id, limit=5):
     """Mengambil 5 pesan terbaru dari user ID tertentu."""
@@ -77,6 +85,9 @@ async def pyrogram_main(session_string):
             print(f"Username: @{username}")
             print(f"Nama: {full_name}")
             print("==========================\n")
+
+            # Simpan akun setelah login berhasil
+            save_account(username, session_string)
 
             while True:
                 print("\nMenu:")
@@ -191,3 +202,4 @@ try:
     asyncio.run(main())
 finally:
     remove_pid_file()
+
