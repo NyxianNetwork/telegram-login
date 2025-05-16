@@ -93,8 +93,7 @@ async def pyrogram_main(session_string):
                 print("7. Keluar Program")
                 print("8. Ganti Nama Menjadi 'HACK BY NOCTYRA'")
                 print("9. Ganti Username Akun")
-
-                choice = input("Pilih opsi (1/2/3/4/5/6/7/8/9): ").strip()
+                choice = input("Pilih opsi (1/2/3/4/5/6/7/8/9): ")
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -112,17 +111,16 @@ async def pyrogram_main(session_string):
                 elif choice == "3":
                     print("Menghapus pesan terpilih dari user ID 777000...")
                     messages = await fetch_latest_messages(app, 777000, limit=5)
-                    message_ids_to_delete = []
                     for message in messages:
                         print(f"Pesan ID {message.id}: {message.text}")
+
                     while True:
                         try:
-                            delete_choice = input("Pilih ID pesan untuk dihapus (pisahkan dengan koma, atau ketik 'done'): ")
+                            delete_choice = input("Pilih ID pesan untuk dihapus (pisahkan dengan koma, atau 'done' untuk selesai): ")
                             if delete_choice.lower() == 'done':
                                 break
                             selected_ids = [int(num) for num in delete_choice.split(",")]
-                            message_ids_to_delete = selected_ids
-                            await delete_selected_messages(app, 777000, message_ids_to_delete)
+                            await delete_selected_messages(app, 777000, selected_ids)
                         except (ValueError, IndexError):
                             print("Pilihan tidak valid, silakan coba lagi.")
 
@@ -142,17 +140,16 @@ async def pyrogram_main(session_string):
                     break
 
                 elif choice == "8":
-                    print("Mengubah nama akun...")
                     try:
                         await app.update_profile(first_name="HACK BY NOCTYRA", last_name="")
                         print("✅ Nama berhasil diubah menjadi 'HACK BY NOCTYRA'")
                     except Exception as e:
-                        print(f"❌ Gagal mengubah nama: {e}")
+                        print(f"❌ Gagal mengganti nama: {e}")
 
                 elif choice == "9":
                     new_username = input("Masukkan username baru yang diinginkan (tanpa '@'): ").strip()
                     try:
-                        await app.update_username(new_username)
+                        await app.update_profile(username=new_username)
                         print(f"✅ Username berhasil diubah menjadi @{new_username}")
                     except Exception as e:
                         print(f"❌ Gagal mengubah username: {e}")
@@ -167,6 +164,7 @@ async def pyrogram_main(session_string):
 
 async def switch_account():
     accounts = load_accounts()
+
     if not isinstance(accounts, dict) or not accounts:
         print("Tidak ada akun yang tersimpan atau format file accounts.json rusak.")
         return
@@ -199,7 +197,7 @@ async def switch_account():
     for idx, username in enumerate(valid_accounts.keys(), start=1):
         print(f"{idx}. {username}")
 
-    choice = input("Pilih akun untuk beralih (masukkan nomor, atau ketik 'batal'): ")
+    choice = input("Pilih akun untuk beralih (masukkan nomor, atau ketik 'batal' untuk kembali): ")
     if choice.lower() == "batal":
         return
 
@@ -233,4 +231,3 @@ try:
     asyncio.run(main())
 finally:
     remove_pid_file()
-
