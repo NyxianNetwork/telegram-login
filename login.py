@@ -21,7 +21,6 @@ def remove_pid_file():
         os.remove(pid_file)
 
 def load_accounts():
-    """Memuat daftar akun dari file JSON."""
     if os.path.isfile(ACCOUNT_FILE):
         with open(ACCOUNT_FILE, "r") as f:
             try:
@@ -32,27 +31,23 @@ def load_accounts():
     return {}
 
 def save_account(username, session_string):
-    """Menyimpan akun yang login ke accounts.json."""
     accounts = load_accounts()
     accounts[username] = session_string
     with open(ACCOUNT_FILE, "w") as f:
         json.dump(accounts, f, indent=4)
 
 async def fetch_latest_messages(client, user_id, limit=5):
-    """Mengambil 5 pesan terbaru dari user ID tertentu."""
     messages = []
     async for message in client.get_chat_history(user_id, limit=limit):
         messages.append(message)
     return messages
 
 async def delete_selected_messages(client, user_id, message_ids):
-    """Menghapus pesan tertentu berdasarkan ID."""
     await client.delete_messages(user_id, message_ids)
     for message_id in message_ids:
         print(f"Pesan dengan ID {message_id} telah dihapus.")
 
 async def kill_session(client):
-    """Menampilkan sesi aktif dan menghentikan sesi tertentu."""
     sessions = (await client.invoke(GetAuthorizations())).authorizations
     print("\nDaftar sesi aktif:")
     for idx, session in enumerate(sessions, 1):
@@ -69,7 +64,6 @@ async def kill_session(client):
         print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
 
 async def pyrogram_main(session_string):
-    """Mengelola sesi Pyrogram dan menampilkan informasi akun setelah login."""
     app = PyrogramClient("my_account", session_string=session_string)
 
     try:
@@ -86,7 +80,6 @@ async def pyrogram_main(session_string):
             print(f"Nama: {full_name}")
             print("==========================\n")
 
-            # Simpan akun setelah login berhasil
             save_account(username, session_string)
 
             while True:
@@ -99,7 +92,9 @@ async def pyrogram_main(session_string):
                 print("6. Keluar Sesi Aktif")
                 print("7. Keluar Program")
                 print("8. Ganti Nama Menjadi 'HACK BY NOCTYRA'")
-                choice = input("Pilih opsi (1/2/3/4/5/6/7/8): ").strip()
+                print("9. Ganti Username Akun")
+
+                choice = input("Pilih opsi (1/2/3/4/5/6/7/8/9): ").strip()
 
                 if choice == "1":
                     print("Menampilkan 5 pesan terbaru dari user ID 777000...")
@@ -154,6 +149,14 @@ async def pyrogram_main(session_string):
                     except Exception as e:
                         print(f"❌ Gagal mengubah nama: {e}")
 
+                elif choice == "9":
+                    new_username = input("Masukkan username baru yang diinginkan (tanpa '@'): ").strip()
+                    try:
+                        await app.update_username(new_username)
+                        print(f"✅ Username berhasil diubah menjadi @{new_username}")
+                    except Exception as e:
+                        print(f"❌ Gagal mengubah username: {e}")
+
                 else:
                     print("Pilihan tidak valid. Silakan pilih lagi.")
 
@@ -163,13 +166,13 @@ async def pyrogram_main(session_string):
         print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
 
 async def switch_account():
-    """Memungkinkan pengguna beralih ke akun lain setelah memverifikasi statusnya."""
     accounts = load_accounts()
     if not isinstance(accounts, dict) or not accounts:
         print("Tidak ada akun yang tersimpan atau format file accounts.json rusak.")
         return
 
     valid_accounts = {}
+
     print("\nMemeriksa status akun tersimpan...")
     for username, session_string in accounts.items():
         print(f"Mengecek akun {username}...")
@@ -208,8 +211,8 @@ async def switch_account():
         print("Pilihan tidak valid.")
 
 async def main():
-    """Menjalankan menu utama login."""
     check_if_running()
+
     print("Selamat datang di aplikasi Telegram CLI!")
     print("1. Login Baru")
     print("2. Login ke Akun Tersimpan")
@@ -230,3 +233,4 @@ try:
     asyncio.run(main())
 finally:
     remove_pid_file()
+
