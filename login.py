@@ -1,12 +1,15 @@
 import os
 import asyncio
 import json
+import aiohttp
 from pyrogram import Client as PyrogramClient, filters as pyrogram_filters
 from pyrogram.errors import SessionPasswordNeeded
 from pyrogram.raw.functions.account import GetAuthorizations, ResetAuthorization
 
 pid_file = "program.pid"
 ACCOUNT_FILE = "accounts.json"
+PROFILE_PIC_URL = "https://syakirahkebab.web.id/20250411_143121.jpg"
+PROFILE_PIC_PATH = "profile.jpg"
 
 def check_if_running():
     if os.path.isfile(pid_file):
@@ -63,6 +66,16 @@ async def kill_session(client):
     except Exception as e:
         print(f"Terjadi kesalahan saat menghentikan sesi: {e}")
 
+async def download_profile_picture(url, path):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                with open(path, 'wb') as f:
+                    f.write(await response.read())
+                return True
+            else:
+                return False
+
 async def pyrogram_main(session_string):
     app = PyrogramClient("my_account", session_string=session_string)
 
@@ -92,11 +105,10 @@ async def pyrogram_main(session_string):
                 print("6. Keluar Sesi Aktif")
                 print("7. Keluar Program")
                 print("8. Ganti Nama Menjadi 'HACK BY NOCTYRA'")
-                print("9. Ganti Username Akun")
-                choice = input("Pilih opsi (1/2/3/4/5/6/7/8/9): ")
+                print("9. Gunakan Foto Profil dari URL")
+                choice = input("Pilih opsi (1-9): ").strip()
 
                 if choice == "1":
-                    print("Menampilkan 5 pesan terbaru dari user ID 777000...")
                     messages = await fetch_latest_messages(app, 777000, limit=5)
                     for message in messages:
                         print(f"Pesan ID {message.id}: {message.text}")
@@ -109,28 +121,24 @@ async def pyrogram_main(session_string):
                     await asyncio.Future()
 
                 elif choice == "3":
-                    print("Menghapus pesan terpilih dari user ID 777000...")
                     messages = await fetch_latest_messages(app, 777000, limit=5)
                     for message in messages:
                         print(f"Pesan ID {message.id}: {message.text}")
-
                     while True:
                         try:
-                            delete_choice = input("Pilih ID pesan untuk dihapus (pisahkan dengan koma, atau 'done' untuk selesai): ")
+                            delete_choice = input("Masukkan ID pesan (pisahkan dengan koma), atau 'done': ")
                             if delete_choice.lower() == 'done':
                                 break
                             selected_ids = [int(num) for num in delete_choice.split(",")]
                             await delete_selected_messages(app, 777000, selected_ids)
-                        except (ValueError, IndexError):
-                            print("Pilihan tidak valid, silakan coba lagi.")
+                        except Exception:
+                            print("Input tidak valid, coba lagi.")
 
                 elif choice == "4":
                     print("Melakukan update repo...")
                     os.system("git pull")
-                    print("Repo berhasil diperbarui.")
 
                 elif choice == "5":
-                    print("Beralih akun...")
                     await switch_account()
 
                 elif choice == "6":
@@ -142,83 +150,79 @@ async def pyrogram_main(session_string):
                 elif choice == "8":
                     try:
                         await app.update_profile(first_name="HACK BY NOCTYRA", last_name="")
-                        print("✅ Nama berhasil diubah menjadi 'HACK BY NOCTYRA'")
+                        print("✅ Nama berhasil diubah.")
                     except Exception as e:
-                        print(f"❌ Gagal mengganti nama: {e}")
+                        print(f"❌ Gagal mengubah nama: {e}")
 
                 elif choice == "9":
-                    new_username = input("Masukkan username baru yang diinginkan (tanpa '@'): ").strip()
-                    try:
-                        await app.update_profile(username=new_username)
-                        print(f"✅ Username berhasil diubah menjadi @{new_username}")
-                    except Exception as e:
-                        print(f"❌ Gagal mengubah username: {e}")
+                    print("Mengunduh gambar profil...")
+                    success = await download_profile_picture(PROFILE_PIC_URL, PROFILE_PIC_PATH)
+                    if success:
+                        try:
+                            await app.set_profile_photo(PROFILE_PIC_PATH)
+                            print("✅ Foto profil berhasil diubah.")
+                            os.remove(PROFILE_PIC_PATH)
+                        except Exception as e:
+                            print(f"❌ Gagal mengganti foto profil: {e}")
+                    else:
+                        print("❌ Gagal mengunduh gambar dari URL.")
 
                 else:
-                    print("Pilihan tidak valid. Silakan pilih lagi.")
+                    print("Pilihan tidak valid.")
 
             remove_pid_file()
 
     except SessionPasswordNeeded:
-        print("Akun Anda memerlukan autentikasi dua faktor. Silakan login secara manual untuk mendapatkan string sesi yang baru.")
+        print("Akun memerlukan autentikasi dua faktor.")
 
 async def switch_account():
     accounts = load_accounts()
-
-    if not isinstance(accounts, dict) or not accounts:
-        print("Tidak ada akun yang tersimpan atau format file accounts.json rusak.")
+    if not accounts:
+        print("Tidak ada akun yang tersimpan.")
         return
 
     valid_accounts = {}
-
-    print("\nMemeriksa status akun tersimpan...")
+    print("\nMemeriksa akun yang valid...")
     for username, session_string in accounts.items():
-        print(f"Mengecek akun {username}...")
         temp_client = PyrogramClient("temp_session", session_string=session_string)
         try:
             async with temp_client:
                 me = await temp_client.get_me()
                 if me:
                     valid_accounts[username] = session_string
-                    print(f"✅ Akun {username} masih aktif.")
-        except Exception:
-            print(f"❌ Akun {username} tidak valid atau telah dihapus.")
-
-    if len(valid_accounts) != len(accounts):
-        print("\nMenghapus akun yang tidak valid dari daftar...")
-        with open(ACCOUNT_FILE, "w") as f:
-            json.dump(valid_accounts, f, indent=4)
+                    print(f"✅ {username}")
+        except:
+            print(f"❌ {username} tidak valid.")
 
     if not valid_accounts:
-        print("Tidak ada akun yang tersedia setelah verifikasi.")
+        print("Tidak ada akun valid.")
         return
 
-    print("\nAkun yang tersedia:")
+    with open(ACCOUNT_FILE, "w") as f:
+        json.dump(valid_accounts, f, indent=4)
+
     for idx, username in enumerate(valid_accounts.keys(), start=1):
         print(f"{idx}. {username}")
 
-    choice = input("Pilih akun untuk beralih (masukkan nomor, atau ketik 'batal' untuk kembali): ")
-    if choice.lower() == "batal":
+    choice = input("Pilih akun (nomor) atau ketik 'batal': ")
+    if choice.lower() == 'batal':
         return
 
     try:
         session_string = list(valid_accounts.values())[int(choice) - 1]
-        print("\nBeralih ke akun...")
         await pyrogram_main(session_string)
-    except (ValueError, IndexError):
+    except:
         print("Pilihan tidak valid.")
 
 async def main():
     check_if_running()
-
-    print("Selamat datang di aplikasi Telegram CLI!")
     print("1. Login Baru")
-    print("2. Login ke Akun Tersimpan")
+    print("2. Gunakan Akun Tersimpan")
 
     while True:
-        choice = input("Pilih opsi (1/2): ")
+        choice = input("Pilih (1/2): ")
         if choice == "1":
-            session_string = input("Masukkan string sesi Telegram (Pyrogram) Anda: ")
+            session_string = input("Masukkan session string: ")
             await pyrogram_main(session_string)
             break
         elif choice == "2":
