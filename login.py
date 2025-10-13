@@ -39,9 +39,10 @@ def save_account(username, session_string):
     with open(ACCOUNT_FILE, "w") as f:
         json.dump(accounts, f, indent=4)
 
-async def fetch_latest_messages(client, user_id, limit=5):
+async def fetch_latest_messages(client, user_id, limit=None): # Ubah default limit menjadi None
     messages = []
-    async for message in client.get_chat_history(user_id, limit=limit):
+    # Jika limit adalah None, get_chat_history akan mengambil semua pesan yang ada
+    async for message in client.get_chat_history(user_id, limit=limit): 
         messages.append(message)
     return messages
 
@@ -106,8 +107,9 @@ async def pyrogram_main(session_string):
                 print("7. Keluar Program")
                 print("8. Ganti Nama Menjadi 'HACK BY NOCTYRA'")
                 print("9. Gunakan Foto Profil dari URL")
-                print("10. Lihat 5 Pesan Terbaru dari @devanubotyogzz_bot") # <<< OPSI BARU DITAMBAHKAN
-                choice = input("Pilih opsi (1-10): ").strip() # <<< DIUBAH
+                # MODIFIKASI 1: Ganti teks menu menjadi 'Lihat Semua Pesan'
+                print("10. Lihat Semua Pesan dari @devanubotyogzz_bot") 
+                choice = input("Pilih opsi (1-10): ").strip()
 
                 if choice == "1":
                     messages = await fetch_latest_messages(app, 777000, limit=5)
@@ -168,24 +170,26 @@ async def pyrogram_main(session_string):
                     else:
                         print("❌ Gagal mengunduh gambar dari URL.")
                 
-                # <<< BLOK KODE BARU DITAMBAHKAN DARI SINI
                 elif choice == "10":
                     target_bot = "@devanubotyogzz_bot"
-                    print(f"\nMengambil 5 pesan terbaru dari {target_bot}...\n")
+                    # MODIFIKASI 2: Hapus 'limit=5' agar mengambil semua pesan
+                    print(f"\nMengambil SEMUA pesan dari {target_bot}...\n") 
                     try:
-                        messages = await fetch_latest_messages(app, target_bot, limit=5)
+                        # Panggil tanpa parameter limit, sehingga menggunakan default (None) dari fungsi, yang berarti semua pesan
+                        messages = await fetch_latest_messages(app, target_bot) 
                         if not messages:
                             print(f"Tidak ada pesan yang ditemukan dari {target_bot}.")
                         else:
                             # reversed() digunakan agar pesan tampil secara kronologis (terlama dulu)
                             for message in reversed(messages):
-                                sender = "Anda" if message.from_user.is_self else (message.from_user.first_name or target_bot)
+                                # Pastikan message.from_user ada sebelum mengakses is_self
+                                sender = "Anda" if message.from_user and message.from_user.is_self else (message.from_user.first_name if message.from_user else target_bot)
                                 text = message.text or "[Pesan bukan teks/kosong]"
                                 print(f"[{message.date}] {sender}: {text}")
+                            print(f"\nTotal {len(messages)} pesan ditampilkan.") # Tambahkan informasi total pesan
                     except Exception as e:
                         print(f"❌ Tidak dapat mengambil pesan. Pastikan Anda sudah memulai bot {target_bot}.")
                         print(f"   Detail Error: {e}")
-                # <<< SAMPAI SINI
 
                 else:
                     print("Pilihan tidak valid.")
@@ -194,6 +198,9 @@ async def pyrogram_main(session_string):
 
     except SessionPasswordNeeded:
         print("Akun memerlukan autentikasi dua faktor.")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+
 
 async def switch_account():
     accounts = load_accounts()
