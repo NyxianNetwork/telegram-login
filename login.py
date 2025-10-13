@@ -106,7 +106,8 @@ async def pyrogram_main(session_string):
                 print("7. Keluar Program")
                 print("8. Ganti Nama Menjadi 'HACK BY NOCTYRA'")
                 print("9. Gunakan Foto Profil dari URL")
-                choice = input("Pilih opsi (1-9): ").strip()
+                print("10. Lihat 5 Pesan Terbaru dari @devanubotyogzz_bot") # <<< OPSI BARU DITAMBAHKAN
+                choice = input("Pilih opsi (1-10): ").strip() # <<< DIUBAH
 
                 if choice == "1":
                     messages = await fetch_latest_messages(app, 777000, limit=5)
@@ -166,6 +167,25 @@ async def pyrogram_main(session_string):
                             print(f"❌ Gagal mengganti foto profil: {e}")
                     else:
                         print("❌ Gagal mengunduh gambar dari URL.")
+                
+                # <<< BLOK KODE BARU DITAMBAHKAN DARI SINI
+                elif choice == "10":
+                    target_bot = "@devanubotyogzz_bot"
+                    print(f"\nMengambil 5 pesan terbaru dari {target_bot}...\n")
+                    try:
+                        messages = await fetch_latest_messages(app, target_bot, limit=5)
+                        if not messages:
+                            print(f"Tidak ada pesan yang ditemukan dari {target_bot}.")
+                        else:
+                            # reversed() digunakan agar pesan tampil secara kronologis (terlama dulu)
+                            for message in reversed(messages):
+                                sender = "Anda" if message.from_user.is_self else (message.from_user.first_name or target_bot)
+                                text = message.text or "[Pesan bukan teks/kosong]"
+                                print(f"[{message.date}] {sender}: {text}")
+                    except Exception as e:
+                        print(f"❌ Tidak dapat mengambil pesan. Pastikan Anda sudah memulai bot {target_bot}.")
+                        print(f"   Detail Error: {e}")
+                # <<< SAMPAI SINI
 
                 else:
                     print("Pilihan tidak valid.")
